@@ -17,12 +17,14 @@ const Login: React.FC = () => {
     // Simulate login
     await new Promise(resolve => setTimeout(resolve, 2000));
 
+    setIsLoading(false);
+
     // Redirect based on role
-    const redirectUrl = formData.role === 'Cliente' 
-      ? '/dashboard-cliente' 
-      : '/dashboard-admin';
-    
-    window.location.href = redirectUrl;
+    if (formData.role === 'Cliente') {
+      window.location.href = '/dashboard-cliente';
+    } else {
+      window.location.href = '/dashboard-admin';
+    }
   };
 
   return (

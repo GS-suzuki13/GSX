@@ -13,7 +13,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection }) => {
     { label: 'Início', link: '#inicio' },
     { label: 'Simule Agora', link: '#simule' },
     { label: 'Contato', link: '#contato' },
-    { label: 'Login', link: '/login', target: '_blank' }
+    { label: 'Login', link: '/login' }
   ];
 
   useEffect(() => {
@@ -27,7 +27,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection }) => {
 
   const handleNavClick = (link: string, target?: string) => {
     if (target === '_blank') {
-      window.open(link, '_blank');
+      window.location.href = link;
       return;
     }
 
@@ -36,6 +36,8 @@ const Header: React.FC<HeaderProps> = ({ activeSection }) => {
       if (element) {
         element.scrollIntoView({ behavior: 'smooth' });
       }
+    } else {
+      window.location.href = link;
     }
     setIsMobileMenuOpen(false);
   };
