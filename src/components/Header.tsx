@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, User } from 'lucide-react';
 
 interface HeaderProps {
   activeSection: string;
@@ -10,9 +10,6 @@ const Header: React.FC<HeaderProps> = ({ activeSection }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navigation = [
-    { label: 'Início', link: '#inicio' },
-    { label: 'Simule Agora', link: '#simule' },
-    { label: 'Contato', link: '#contato' },
     { label: 'Login', link: '/login' }
   ];
 
@@ -43,26 +40,22 @@ const Header: React.FC<HeaderProps> = ({ activeSection }) => {
   };
 
   return (
-    <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-      isScrolled ? 'bg-primary shadow-lg' : 'bg-primary/95 backdrop-blur-sm'
-    }`}>
-      <div className="container mx-auto px-6 py-4">
+    <header className="fixed top-0 w-full z-50 bg-primary shadow-lg">
+      <div className="px-15 py-5">
         <div className="flex items-center justify-between">
-          <div className="text-2xl font-bold text-white">GSX</div>
+          <div className="flex items-center">
+            <div className="text-2xl font-bold text-white">GSX</div>
+          </div>
           
-          <nav className="hidden md:flex items-center space-x-8">
-            {navigation.map((item, index) => (
-              <button
-                key={index}
-                onClick={() => handleNavClick(item.link, item.target)}
-                className={`text-white hover:text-secondary transition-colors duration-200 ${
-                  activeSection === item.link.slice(1) ? 'text-secondary' : ''
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
+          <div className="hidden md:flex items-center">
+            <button
+              onClick={() => handleNavClick('/login')}
+              className="flex items-center px-6 py-2.5 border-2 border-accent text-white hover:bg-accent hover:text-white transition-all duration-200 rounded-lg font-medium"
+            >
+              <User className="w-4 h-4 mr-2" />
+              Login
+            </button>
+          </div>
 
           <button
             className="md:hidden text-white"
@@ -74,17 +67,13 @@ const Header: React.FC<HeaderProps> = ({ activeSection }) => {
 
         {isMobileMenuOpen && (
           <div className="md:hidden mt-4 pb-4">
-            <nav className="flex flex-col space-y-4">
-              {navigation.map((item, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleNavClick(item.link, item.target)}
-                  className="text-white hover:text-secondary transition-colors duration-200 text-left"
-                >
-                  {item.label}
-                </button>
-              ))}
-            </nav>
+            <button
+              onClick={() => handleNavClick('/login')}
+              className="flex items-center px-6 py-2.5 border-2 border-accent text-white hover:bg-accent hover:text-white transition-all duration-200 rounded-lg font-medium w-full justify-center"
+            >
+              <User className="w-4 h-4 mr-2" />
+              Login
+            </button>
           </div>
         )}
       </div>

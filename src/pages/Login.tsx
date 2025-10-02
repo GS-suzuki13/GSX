@@ -28,7 +28,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary to-primary/90 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-primary to-secondary flex items-center justify-center p-6">
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <div className="text-4xl font-bold text-primary mb-2">GSX</div>
@@ -44,7 +44,7 @@ const Login: React.FC = () => {
             <select
               value={formData.role}
               onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-secondary"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent"
             >
               <option value="Cliente">Cliente</option>
               <option value="Administrador">Administrador</option>
@@ -62,7 +62,7 @@ const Login: React.FC = () => {
                 required
                 value={formData.username}
                 onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-secondary"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent"
                 placeholder="Digite seu usuário"
               />
             </div>
@@ -79,7 +79,7 @@ const Login: React.FC = () => {
                 required
                 value={formData.password}
                 onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-secondary"
+                className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent"
                 placeholder="Digite sua senha"
               />
               <button
@@ -95,10 +95,10 @@ const Login: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-secondary hover:bg-secondary/90 disabled:bg-secondary/50 text-primary font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center"
+            className="w-full bg-accent hover:bg-accent/90 disabled:bg-accent/50 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center"
           >
             {isLoading ? (
-              <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full" />
+              <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
             ) : (
               'Entrar'
             )}
@@ -106,7 +106,7 @@ const Login: React.FC = () => {
         </form>
 
         <div className="mt-6 text-center">
-          <a href="#" className="text-sm text-secondary hover:underline">
+          <a href="#" className="text-sm text-accent hover:underline">
             Esqueceu sua senha?
           </a>
         </div>

@@ -21,15 +21,15 @@ const ClientDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-6 py-4">
+    <div className="min-h-screen bg-gray-50 font-sans">
+      <header className="bg-primary shadow-lg">
+        <div className="container mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="text-2xl font-bold text-primary mr-8">GSX</div>
-              <h1 className="text-xl font-semibold text-gray-800">Dashboard do Cliente</h1>
+              <div className="text-2xl font-bold text-white mr-8">GSX</div>
+              <h1 className="text-xl font-semibold text-white">Dashboard do Cliente</h1>
             </div>
-            <button className="flex items-center text-gray-600 hover:text-red-600 transition-colors">
+            <button className="flex items-center text-light hover:text-white transition-colors">
               <LogOut className="w-5 h-5 mr-2" />
               <span onClick={() => window.location.href = '/'}>Sair</span>
             </button>
@@ -67,8 +67,8 @@ const ClientDashboard: React.FC = () => {
           <DashboardCard
             title="Rendimento Total"
             value={`R$ ${clientData.rendimentoTotal.toLocaleString('pt-BR')}`}
-            icon={<DollarSign className="w-8 h-8 text-secondary" />}
-            color="yellow"
+            icon={<DollarSign className="w-8 h-8 text-purple-600" />}
+            color="purple"
           />
           <DashboardCard
             title="Rendimento Último Mês"
@@ -84,7 +84,7 @@ const ClientDashboard: React.FC = () => {
           />
         </div>
 
-        <div className="bg-white rounded-2xl p-8 shadow-sm">
+        <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-200">
           <h3 className="text-xl font-semibold text-gray-800 mb-6">
             Histórico de Rendimentos
           </h3>

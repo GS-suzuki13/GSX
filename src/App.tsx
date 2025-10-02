@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
-import SimulationSection from './components/SimulationSection';
-import ContactSection from './components/ContactSection';
-import WhatsAppButton from './components/WhatsAppButton';
-import StockTicker from './components/StockTicker';
 
 function App() {
   const [activeSection, setActiveSection] = useState('inicio');
 
   useEffect(() => {
     const handleScroll = () => {
-      const sections = ['inicio', 'simule', 'contato'];
+      const sections = ['inicio'];
       const scrollPosition = window.scrollY + 100;
 
       for (const section of sections) {
@@ -33,15 +29,10 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header activeSection={activeSection} />
-      <StockTicker />
       
       <main>
         <HeroSection />
-        <SimulationSection />
-        <ContactSection />
       </main>
-
-      <WhatsAppButton />
     </div>
   );
 }
