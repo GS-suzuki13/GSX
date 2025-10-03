@@ -1,3 +1,2 @@
 user,password,token,name,cpf,email,data_cadastro,valor_aportado,percentual_contrato
 gsx.admin,admin,adm,GSX,12345678900,gsx@email.com,2025-08-30,0,3
-gustavo.suzuki,089878,user,Gustavo Galhardo Suzuki,089.878.399-23,email@email.com,2025-08-04,1000,5
