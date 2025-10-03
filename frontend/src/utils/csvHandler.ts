@@ -1,7 +1,7 @@
 // src/utils/csvHandler.ts
 import { User, ClientReturn } from '../types';
 
-const API_URL = 'http:// localhost:5000';
+const API_URL = 'http://gsx-production.up.railway.app';
 
 export class CSVHandler {
   // Buscar todos os usuários

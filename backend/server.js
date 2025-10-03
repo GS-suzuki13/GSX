@@ -1,4 +1,3 @@
-// server.js
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
@@ -9,22 +8,23 @@ const multer = require("multer");
 const conversor = require("./conversor");
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 // Middlewares
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "https://gsx-roan.vercel.app/"],
+  })
+);
 app.use(express.json());
 
-// Diretórios e arquivos
 const DATA_DIR = path.join(__dirname, "data");
 const UPLOAD_DIR = path.join(__dirname, "uploads");
 const USERS_FILE = path.join(DATA_DIR, "users.csv");
 
-// Criação de pastas, se necessário
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR);
 
-// Upload config
 const upload = multer({ dest: UPLOAD_DIR });
 
 /* =============== HELPERS =============== */
@@ -46,7 +46,6 @@ function writeCSV(filePath, header, records) {
 }
 
 function ensureClientFile(clientUser) {
-  // garante que o nome do arquivo termine em .csv
   let filename = clientUser.endsWith(".csv") ? clientUser : `${clientUser}.csv`;
   const clientFile = path.join(DATA_DIR, filename);
 
@@ -76,9 +75,7 @@ app.post("/users", async (req, res) => {
     let users = await readCSV(USERS_FILE);
     const newUser = { ...req.body };
 
-    if (!newUser.percentual_contrato) {
-      newUser.percentual_contrato = 3;
-    }
+    if (!newUser.percentual_contrato) newUser.percentual_contrato = 3;
 
     users.push(newUser);
 
@@ -104,7 +101,6 @@ app.post("/users", async (req, res) => {
   }
 });
 
-// POST login
 app.post("/login", async (req, res) => {
   const { user, password } = req.body;
   try {
@@ -160,52 +156,60 @@ app.post("/returns/:clientUser", async (req, res) => {
 });
 
 /* =============== IMPORTAR HISTÓRICO =============== */
-app.post("/returns/import/:clientUser", upload.single("file"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: "Nenhum arquivo enviado" });
+app.post(
+  "/returns/import/:clientUser",
+  upload.single("file"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "Nenhum arquivo enviado" });
+      }
+
+      const clientUser = req.params.clientUser;
+      const clientFile = ensureClientFile(clientUser);
+
+      const filePath = req.file.path;
+      const convertedReturns = await conversor(filePath);
+
+      if (!Array.isArray(convertedReturns)) {
+        console.error("Conversor retornou inválido:", convertedReturns);
+        return res
+          .status(500)
+          .json({ error: "Erro no formato do arquivo importado" });
+      }
+
+      const existingReturns = await readCSV(clientFile);
+      const existingDates = new Set(existingReturns.map((r) => r.data));
+      const newReturns = convertedReturns.filter(
+        (r) => !existingDates.has(r.data)
+      );
+
+      const allReturns = [...existingReturns, ...newReturns];
+
+      await writeCSV(
+        clientFile,
+        [
+          { id: "data", title: "data" },
+          { id: "percentual", title: "percentual" },
+          { id: "variacao", title: "variacao" },
+          { id: "rendimento", title: "rendimento" },
+        ],
+        allReturns
+      );
+
+      fs.readdirSync(UPLOAD_DIR).forEach((file) => {
+        fs.unlinkSync(path.join(UPLOAD_DIR, file));
+      });
+
+      res.json({ success: true, added: newReturns.length });
+    } catch (err) {
+      console.error("Erro ao importar histórico:", err);
+      res.status(500).json({ error: "Erro ao importar histórico" });
     }
-
-    const clientUser = req.params.clientUser;
-    const clientFile = ensureClientFile(clientUser);
-
-    const filePath = req.file.path;
-    const convertedReturns = await conversor(filePath);
-
-    if (!Array.isArray(convertedReturns)) {
-      console.error("Conversor retornou inválido:", convertedReturns);
-      return res.status(500).json({ error: "Erro no formato do arquivo importado" });
-    }
-
-    const existingReturns = await readCSV(clientFile);
-    const existingDates = new Set(existingReturns.map(r => r.data));
-    const newReturns = convertedReturns.filter(r => !existingDates.has(r.data));
-
-    const allReturns = [...existingReturns, ...newReturns];
-
-    await writeCSV(
-      clientFile,
-      [
-        { id: "data", title: "data" },
-        { id: "percentual", title: "percentual" },
-        { id: "variacao", title: "variacao" },
-        { id: "rendimento", title: "rendimento" },
-      ],
-      allReturns
-    );
-
-    fs.readdirSync(UPLOAD_DIR).forEach(file => {
-      fs.unlinkSync(path.join(UPLOAD_DIR, file));
-    });
-
-    res.json({ success: true, added: newReturns.length });
-  } catch (err) {
-    console.error("Erro ao importar histórico:", err);
-    res.status(500).json({ error: "Erro ao importar histórico" });
   }
-});
+);
 
 /* =============== SERVER =============== */
-app.listen(PORT, " localhost", () => {
-  console.log(`Servidor rodando em http:// localhost:${PORT}`);
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
 });

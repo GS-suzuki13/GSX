@@ -36,7 +36,7 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
 
   const loadClientReturns = async () => {
     try {
-      const response = await fetch(`http:// localhost:5000/returns/${client.user}`);
+      const response = await fetch(`http://gsx-production.up.railway.app/returns/${client.user}`);
       if (!response.ok) throw new Error('Erro ao carregar rendimentos');
       const data = await response.json();
 
@@ -83,7 +83,7 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
     };
 
     try {
-      const response = await fetch(`http:// localhost:5000/returns/${client.user}`, {
+      const response = await fetch(`http://gsx-production.up.railway.app/returns/${client.user}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newReturn),
@@ -110,7 +110,7 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
 
     setIsImporting(true);
     try {
-      const response = await fetch(`http:// localhost:5000/returns/import/${client.user}`, {
+      const response = await fetch(`http://gsx-production.up.railway.app/returns/import/${client.user}`, {
         method: 'POST',
         body: formData,
       });
@@ -266,8 +266,8 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
                     key={monthKey}
                     onClick={() => setActiveMonth(monthKey)}
                     className={`px-4 py-1 rounded-md text-sm font-medium ${activeMonth === monthKey
-                        ? 'bg-[#00A676] text-white'
-                        : 'bg-[#F4F5F7] text-[#1A2433] hover:bg-[#D1E9E5]'
+                      ? 'bg-[#00A676] text-white'
+                      : 'bg-[#F4F5F7] text-[#1A2433] hover:bg-[#D1E9E5]'
                       }`}
                   >
                     {label}
