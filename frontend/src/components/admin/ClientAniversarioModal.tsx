@@ -11,7 +11,7 @@ export default function ClientAniversarioModal({ data, onClose }: ClientAniversa
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
       <div className="bg-[#FFFFFF] rounded-2xl shadow-lg max-w-lg w-full p-6">
         <h2 className="text-xl font-bold text-[#1A2433] mb-4">
-          Clientes com Repasse Amanhã
+          Clientes com Repasse - AMANHÃ
         </h2>
 
         <ul className="space-y-2 mb-6">

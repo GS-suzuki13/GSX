@@ -1,7 +1,7 @@
 // src/utils/csvHandler.ts
 import { User, ClientReturn } from '../types';
 
-const API_URL = 'http://gsx-production.up.railway.app';
+const API_URL = 'http://nonextortive-wealthily-charlotte.ngrok-free.dev';
 
 export class CSVHandler {
   // Buscar todos os usuários

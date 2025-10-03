@@ -1,3 +1,4 @@
+// server.js
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
@@ -6,14 +7,16 @@ const csvParser = require("csv-parser");
 const { createObjectCsvWriter } = require("csv-writer");
 const multer = require("multer");
 const conversor = require("./conversor");
+const fetch = require("node-fetch"); // importante para requisições externas
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+
 // Middlewares
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://gsx-roan.vercel.app/"],
+    origin: ["http://localhost:5173", "https://gsx-roan.vercel.app"],
   })
 );
 app.use(express.json());
@@ -210,6 +213,8 @@ app.post(
 );
 
 /* =============== SERVER =============== */
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+const host = '0.0.0.0';
+app.listen(PORT, host, () => {
+  console.log(`Servidor rodando na porta ${PORT} e acessível na rede local`);
 });
+

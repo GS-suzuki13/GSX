@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { User, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, ImageOffIcon } from 'lucide-react';
 import { CSVHandler } from '../utils/csvHandler';
+import logo from '../assets/logo.png'
 
 const Login: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -55,7 +56,7 @@ const Login: React.FC = () => {
           {/* Centralizando a logo */}
           <div className="flex justify-center mb-4">
             <img
-              src="./logo.png"
+              src={logo}
               alt="Logo GSX"
               className="w-32 h-auto"
             />

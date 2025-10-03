@@ -96,7 +96,7 @@ npm install
 node server.js
 ```
 Servidor rodará por padrão em:  
-👉 http://gsx-production.up.railway.app
+👉 http://localhost
 
 ### 3️⃣ Configurar o Frontend
 ```bash

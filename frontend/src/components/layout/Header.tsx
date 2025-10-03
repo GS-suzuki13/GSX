@@ -1,5 +1,6 @@
 // src/components/Header.tsx
 import { LogOut } from 'lucide-react';
+import logo from '../../assets/logo.png'
 
 interface HeaderProps {
   title: string;
@@ -11,7 +12,7 @@ export default function Header({ title, onLogout }: HeaderProps) {
     <header className="shadow-sm bg-white">
       <div className="container mx-auto px-6 py-4 flex justify-between items-center">
         <div className="flex items-center">
-          <img src="./logo.png" alt="Logo GSX" className="w-32 h-auto mr-8" />
+          <img src={logo} alt="Logo GSX" className="w-32 h-auto mr-8" />
           <h1 className="text-xl font-semibold text-[#1A2433]">
             {title}
           </h1>

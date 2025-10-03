@@ -26,24 +26,22 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
       const data = await CSVHandler.getUsers();
       setClients(data);
 
-      const hoje = new Date();
-      const amanha = new Date(hoje);
-      amanha.setDate(hoje.getDate() + 1);
+      const amanha = new Date();
+      amanha.setDate(amanha.getDate() + 1); // Definindo a data de amanhã
 
+      // Filtrando clientes e verificando se o próximo repasse é amanhã
       const clientesComRepasseAmanha = data
-        .filter((c) => {
-          if (!c.data_cadastro || c.token === "adm") return false;
+        .filter((cliente) => {
+          if (!cliente.data_cadastro || cliente.token === "adm") return false;
+          
+          // Usando a função calculateNextRepasse para obter o próximo repasse
+          const proximoRepasse = calculateNextRepasse(cliente.data_cadastro);
 
-          const dataCadastro = new Date(c.data_cadastro + "T00:00:00");
-          dataCadastro.setDate(dataCadastro.getDate() + 1)
-          const diffDias = Math.floor(
-            (amanha.getTime() - dataCadastro.getTime()) / (1000 * 60 * 60 * 24)
-          );
-
-          return diffDias > 0 && diffDias % 30 === 0;
+          // Verificando se o próximo repasse é amanhã
+          return proximoRepasse === amanha.toLocaleDateString("pt-BR");
         })
-        .map((c) => ({
-          ...c,
+        .map((cliente) => ({
+          ...cliente,
           proximoRepasse: amanha.toLocaleDateString("pt-BR"),
         }));
 
@@ -55,6 +53,20 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
 
     fetchClients();
   }, []);
+
+  const calculateNextRepasse = (dataCadastro: string): string => {
+    const cadastroDate = new Date(dataCadastro);
+    cadastroDate.setDate(cadastroDate.getDate() + 1);
+    const today = new Date();
+
+    cadastroDate.setFullYear(today.getFullYear(), today.getMonth(), cadastroDate.getDate());
+
+    if (cadastroDate <= today) {
+      cadastroDate.setMonth(cadastroDate.getMonth() + 1);
+    }
+
+    return cadastroDate.toLocaleDateString('pt-BR');
+  };
 
   const sortedClients = [...clients].sort((a, b) => {
     if (sortBy === "nome") return a.name.localeCompare(b.name);

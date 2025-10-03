@@ -84,7 +84,7 @@ export default function ClientTable({
                   <td className="py-3 px-4">
                     <button
                       onClick={() => onSelectClient(client)}
-                      className="text-[#1A2433] hover:text-[#00A676] text-sm font-medium"
+                      className="text-emerald-500 hover:text-[#00A676] text-sm font-medium"
                     >
                       Informar Rendimentos
                     </button>

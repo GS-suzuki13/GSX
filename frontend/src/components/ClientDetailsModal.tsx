@@ -36,7 +36,7 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
 
   const loadClientReturns = async () => {
     try {
-      const response = await fetch(`http://gsx-production.up.railway.app/returns/${client.user}`);
+      const response = await fetch(`http://nonextortive-wealthily-charlotte.ngrok-free.dev/returns/${client.user}`);
       if (!response.ok) throw new Error('Erro ao carregar rendimentos');
       const data = await response.json();
 
@@ -83,7 +83,7 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
     };
 
     try {
-      const response = await fetch(`http://gsx-production.up.railway.app/returns/${client.user}`, {
+      const response = await fetch(`http://nonextortive-wealthily-charlotte.ngrok-free.dev/returns/${client.user}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newReturn),
@@ -110,7 +110,7 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
 
     setIsImporting(true);
     try {
-      const response = await fetch(`http://gsx-production.up.railway.app/returns/import/${client.user}`, {
+      const response = await fetch(`http://nonextortive-wealthily-charlotte.ngrok-free.dev/returns/import/${client.user}`, {
         method: 'POST',
         body: formData,
       });

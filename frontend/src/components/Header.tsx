@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, User, X } from 'lucide-react';
+import logo from '../assets/white-logo.png'
 
 interface HeaderProps {
   activeSection: string;
@@ -43,10 +44,10 @@ const Header: React.FC<HeaderProps> = ({ activeSection }) => {
     <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${
       isScrolled ? 'bg-primary shadow-lg' : 'bg-primary/95 backdrop-blur-sm'
     }`}>
-      <div className="container mx-auto px-6 py-4">
+      <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
             <img
-              src="./white-logo.png"
+              src={logo}
               alt="Logo GSX"
               className="w-32 h-auto mr-8"
             />
@@ -56,10 +57,11 @@ const Header: React.FC<HeaderProps> = ({ activeSection }) => {
               <button
                 key={index}
                 onClick={() => handleNavClick(item.link, item.label)}
-                className={`text-white hover:text-secondary transition-colors duration-200 ${
-                  activeSection === item.link.slice(1) ? 'text-secondary' : ''
+                className={`flex items-center text-white hover:bg-secondary hover:text-primary transition-all duration-200 py-2 px-4 rounded-md ${
+                  activeSection === item.link.slice(1) ? 'text-secondary bg-primary' : ''
                 }`}
               >
+                {item.label === 'Login' && <User className="mr-2 w-5 h-5" />}
                 {item.label}
               </button>
             ))}
