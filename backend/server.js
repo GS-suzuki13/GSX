@@ -14,14 +14,7 @@ const PORT = process.env.PORT || 5000;
 
 
 // Middlewares
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",
-      "https://gsx-roan.vercel.app/"
-    ],
-  })
-);
+app.use(cors());
 app.use(express.json());
 
 const DATA_DIR = path.join(__dirname, "data");
