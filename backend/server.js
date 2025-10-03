@@ -7,7 +7,7 @@ const csvParser = require("csv-parser");
 const { createObjectCsvWriter } = require("csv-writer");
 const multer = require("multer");
 const conversor = require("./conversor");
-const fetch = require("node-fetch"); // importante para requisições externas
+const fetch = require("node-fetch");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,7 +16,10 @@ const PORT = process.env.PORT || 5000;
 // Middlewares
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://gsx-roan.vercel.app"],
+    origin: [
+      "http://localhost:5173",
+      "https://gsx-roan.vercel.app/"
+    ],
   })
 );
 app.use(express.json());

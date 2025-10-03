@@ -1,12 +1,12 @@
 // src/utils/csvHandler.ts
 import { User, ClientReturn } from '../types';
 
-const API_URL = 'http://nonextortive-wealthily-charlotte.ngrok-free.dev';
+  const apiUrl = import.meta.env.VITE_API_URL;
 
 export class CSVHandler {
   // Buscar todos os usuários
   static async getUsers(): Promise<User[]> {
-    const res = await fetch(`${API_URL}/users`);
+    const res = await fetch(`${apiUrl}/users`);
     if (!res.ok) throw new Error('Erro ao buscar usuários');
     const data = await res.json();
 
@@ -19,7 +19,7 @@ export class CSVHandler {
 
   // Adicionar um novo usuário
   static async addUser(user: User): Promise<{ success: boolean }> {
-    const res = await fetch(`${API_URL}/users`, {
+    const res = await fetch(`${apiUrl}/users`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(user),
@@ -33,7 +33,7 @@ export class CSVHandler {
   }
   // Autenticação de login
   static async authenticateUser(username: string, password: string): Promise<User | null> {
-    const res = await fetch(`${API_URL}/login`, {
+    const res = await fetch(`${apiUrl}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user: username, password }),
@@ -49,7 +49,7 @@ export class CSVHandler {
 
   // Retornos de um cliente
   static async getClientReturns(clientUser: string): Promise<ClientReturn[]> {
-    const response = await fetch(`${API_URL}/returns/${clientUser}`);
+    const response = await fetch(`${apiUrl}/returns/${clientUser}`);
     if (!response.ok) throw new Error('Erro ao buscar retornos do cliente');
 
     const data = await response.json();
@@ -64,7 +64,7 @@ export class CSVHandler {
 
   // Adicionar rendimento a um cliente
   static async addClientReturn(clientUser: string, returnData: ClientReturn): Promise<void> {
-    const res = await fetch(`${API_URL}/returns/${clientUser}`, {
+    const res = await fetch(`${apiUrl}/returns/${clientUser}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(returnData),

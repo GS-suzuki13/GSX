@@ -13,6 +13,7 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
   const [returnForm, setReturnForm] = useState({ percentual: '' });
   const [activeMonth, setActiveMonth] = useState<string>('');
   const [isImporting, setIsImporting] = useState(false);
+  const apiUrl = import.meta.env.VITE_API_URL;
 
   const addOneDay = (date: string): string => {
     const currentDate = new Date(date);
@@ -36,7 +37,7 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
 
   const loadClientReturns = async () => {
     try {
-      const response = await fetch(`http://nonextortive-wealthily-charlotte.ngrok-free.dev/returns/${client.user}`);
+      const response = await fetch(`${apiUrl}/returns/${client.user}`);
       if (!response.ok) throw new Error('Erro ao carregar rendimentos');
       const data = await response.json();
 
@@ -83,7 +84,7 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
     };
 
     try {
-      const response = await fetch(`http://nonextortive-wealthily-charlotte.ngrok-free.dev/returns/${client.user}`, {
+      const response = await fetch(`${apiUrl}/returns/${client.user}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newReturn),
@@ -110,7 +111,7 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
 
     setIsImporting(true);
     try {
-      const response = await fetch(`http://nonextortive-wealthily-charlotte.ngrok-free.dev/returns/import/${client.user}`, {
+      const response = await fetch(`${apiUrl}/returns/import/${client.user}`, {
         method: 'POST',
         body: formData,
       });
