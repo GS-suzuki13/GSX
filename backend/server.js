@@ -116,6 +116,77 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// =================== USERS - EDITAR ===================
+app.put("/users/:user", async (req, res) => {
+  try {
+    const username = req.params.user;
+    let users = await readCSV(USERS_FILE);
+
+    const index = users.findIndex((u) => u.user === username);
+    if (index === -1) {
+      return res.status(404).json({ error: "Usuário não encontrado" });
+    }
+
+    users[index] = { ...users[index], ...req.body };
+
+    const headers = [
+      { id: "user", title: "user" },
+      { id: "password", title: "password" },
+      { id: "token", title: "token" },
+      { id: "name", title: "name" },
+      { id: "cpf", title: "cpf" },
+      { id: "email", title: "email" },
+      { id: "data_cadastro", title: "data_cadastro" },
+      { id: "valor_aportado", title: "valor_aportado" },
+      { id: "percentual_contrato", title: "percentual_contrato" },
+    ];
+
+    await writeCSV(USERS_FILE, headers, users);
+    res.json({ success: true, user: users[index] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erro ao editar usuário" });
+  }
+});
+
+// =================== USERS - EXCLUIR ===================
+app.delete("/users/:user", async (req, res) => {
+  try {
+    const username = req.params.user;
+    let users = await readCSV(USERS_FILE);
+
+    const filtered = users.filter((u) => u.user !== username);
+    if (filtered.length === users.length) {
+      return res.status(404).json({ error: "Usuário não encontrado" });
+    }
+
+    const headers = [
+      { id: "user", title: "user" },
+      { id: "password", title: "password" },
+      { id: "token", title: "token" },
+      { id: "name", title: "name" },
+      { id: "cpf", title: "cpf" },
+      { id: "email", title: "email" },
+      { id: "data_cadastro", title: "data_cadastro" },
+      { id: "valor_aportado", title: "valor_aportado" },
+      { id: "percentual_contrato", title: "percentual_contrato" },
+    ];
+
+    await writeCSV(USERS_FILE, headers, filtered);
+
+    const clientFile = path.join(DATA_DIR, `${username}.csv`);
+    if (fs.existsSync(clientFile)) {
+      fs.unlinkSync(clientFile);
+    }
+
+    res.json({ success: true, message: `Usuário '${username}' excluído com sucesso` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erro ao excluir usuário" });
+  }
+});
+
+
 /* =============== RETURNS =============== */
 app.get("/returns/:clientUser", async (req, res) => {
   try {
@@ -151,6 +222,70 @@ app.post("/returns/:clientUser", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erro ao salvar rendimento" });
+  }
+});
+
+// =================== RETURNS - EXCLUIR ===================
+app.delete("/returns/:clientUser/:date", async (req, res) => {
+  try {
+    const { clientUser, date } = req.params;
+    const clientFile = ensureClientFile(clientUser);
+    const returns = await readCSV(clientFile);
+
+    const filtered = returns.filter((r) => r.data !== date);
+
+    if (filtered.length === returns.length) {
+      return res.status(404).json({ error: "Rendimento não encontrado" });
+    }
+
+    await writeCSV(
+      clientFile,
+      [
+        { id: "data", title: "data" },
+        { id: "percentual", title: "percentual" },
+        { id: "variacao", title: "variacao" },
+        { id: "rendimento", title: "rendimento" },
+      ],
+      filtered
+    );
+
+    res.json({ success: true, message: `Rendimento de ${date} excluído com sucesso` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erro ao excluir rendimento" });
+  }
+});
+
+// =================== RETURNS - UPDATE ===================
+app.put("/returns/:clientUser/:date", async (req, res) => {
+  try {
+    const { clientUser, date } = req.params;
+    const clientFile = ensureClientFile(clientUser);
+    const returns = await readCSV(clientFile);
+
+    const index = returns.findIndex((r) => r.data === date);
+    if (index === -1) {
+      return res.status(404).json({ error: "Rendimento não encontrado" });
+    }
+
+    // Mantemos a data, atualizamos percentual, variação e rendimento
+    returns[index] = { ...returns[index], ...req.body, data: date };
+
+    await writeCSV(
+      clientFile,
+      [
+        { id: "data", title: "data" },
+        { id: "percentual", title: "percentual" },
+        { id: "variacao", title: "variacao" },
+        { id: "rendimento", title: "rendimento" },
+      ],
+      returns
+    );
+
+    res.json({ success: true, return: returns[index] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erro ao atualizar rendimento" });
   }
 });
 

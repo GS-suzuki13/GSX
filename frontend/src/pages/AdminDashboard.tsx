@@ -26,27 +26,34 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
       const data = await CSVHandler.getUsers();
       setClients(data);
 
-      const amanha = new Date();
-      amanha.setDate(amanha.getDate() + 1); // Definindo a data de amanhã
+      const getNextBusinessDay = () => {
+        const date = new Date();
+        date.setDate(date.getDate() + 1);
 
-      // Filtrando clientes e verificando se o próximo repasse é amanhã
-      const clientesComRepasseAmanha = data
+        while (date.getDay() === 0 || date.getDay() === 6) {
+          date.setDate(date.getDate() + 1);
+        }
+
+        return date;
+      };
+
+      const proximoDiaUtil = getNextBusinessDay();
+      const proximoDiaUtilString = proximoDiaUtil.toLocaleDateString("pt-BR");
+
+      const clientesComRepasseNoProximoDiaUtil = data
         .filter((cliente) => {
           if (!cliente.data_cadastro || cliente.token === "adm") return false;
-          
-          // Usando a função calculateNextRepasse para obter o próximo repasse
-          const proximoRepasse = calculateNextRepasse(cliente.data_cadastro);
 
-          // Verificando se o próximo repasse é amanhã
-          return proximoRepasse === amanha.toLocaleDateString("pt-BR");
+          const proximoRepasse = calculateNextRepasse(cliente.data_cadastro);
+          return proximoRepasse === proximoDiaUtilString;
         })
         .map((cliente) => ({
           ...cliente,
-          proximoRepasse: amanha.toLocaleDateString("pt-BR"),
+          proximoRepasse: proximoDiaUtilString,
         }));
 
-      if (clientesComRepasseAmanha.length > 0) {
-        setClientesProximoRepasse(clientesComRepasseAmanha);
+      if (clientesComRepasseNoProximoDiaUtil.length > 0) {
+        setClientesProximoRepasse(clientesComRepasseNoProximoDiaUtil);
         setShowAniversarioModal(true);
       }
     };
@@ -80,16 +87,21 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
     return 0;
   });
 
+  const handleClientUpdated = (updatedClient: User, action: "edit" | "delete") => {
+    setClients((prevClients) => {
+      if (action === "delete") {
+        return prevClients.filter((c) => c.user !== updatedClient.user);
+      } else {
+        return prevClients.map((c) => (c.user === updatedClient.user ? updatedClient : c));
+      }
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 font-[Inter,sans-serif]">
-      <Header
-        title="Dashboard Administrador"
-        onLogout={onLogout}
-      />
+      <Header title="Dashboard Administrador" onLogout={onLogout} />
       <main className="max-w-7xl mx-auto p-6">
-        <h2 className="text-2xl font-semibold text-[#1A2433] mb-6">
-          Visão Geral
-        </h2>
+        <h2 className="text-2xl font-semibold text-[#1A2433] mb-6">Visão Geral</h2>
 
         <AdminOverviewCards clients={clients} />
 
@@ -99,6 +111,7 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
           onSortChange={setSortBy}
           onSelectClient={setSelectedClient}
           onRegisterClient={() => setShowClientForm(true)}
+          onClientUpdated={handleClientUpdated} // Passa a função para atualizar a tabela
         />
       </main>
 

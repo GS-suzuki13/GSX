@@ -78,10 +78,6 @@ const HeroSection: React.FC = () => {
               <MapPin className="w-5 h-5 mr-2" />
               <span>Rua Heinruch Hemmer, 1900 - Blumenau, SC</span>
             </div>
-            <div className="flex items-center mb-4">
-              <Phone className="w-5 h-5 mr-2" />
-              <span>(47) 99231-5995</span>
-            </div>
             <div className="flex items-center">
               <FileText className="w-5 h-5 mr-2" />
               <span>CNPJ: 57.488.705/0001-17</span>

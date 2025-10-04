@@ -1,7 +1,7 @@
 // src/utils/csvHandler.ts
 import { User, ClientReturn } from '../types';
 
-  const apiUrl = import.meta.env.VITE_API_URL;
+const apiUrl = import.meta.env.VITE_API_URL;
 
 export class CSVHandler {
   // Buscar todos os usuários

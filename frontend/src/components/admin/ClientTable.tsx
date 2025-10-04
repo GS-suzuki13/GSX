@@ -1,6 +1,9 @@
-import React from "react";
-import { Filter, Plus } from "lucide-react";
+import React, { useState } from "react";
+import { Filter, Plus, ClipboardList, Pencil, X, Check } from "lucide-react";
 import { User } from "../../types";
+
+const apiUrl = import.meta.env.VITE_API_URL;
+
 
 interface ClientTableProps {
   clients: User[];
@@ -8,6 +11,7 @@ interface ClientTableProps {
   onSortChange: (value: "nome" | "percentual" | "data") => void;
   onSelectClient: (client: User) => void;
   onRegisterClient: () => void;
+  onClientUpdated: (updatedClient: User, action: "edit" | "delete") => void;
 }
 
 export default function ClientTable({
@@ -15,8 +19,56 @@ export default function ClientTable({
   sortBy,
   onSortChange,
   onSelectClient,
-  onRegisterClient
+  onRegisterClient,
+  onClientUpdated
 }: ClientTableProps) {
+  const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<Partial<User>>({});
+
+  const handleEditClick = (client: User) => {
+    setEditingUser(client.user);
+    setEditForm(client);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingUser(null);
+    setEditForm({});
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingUser) return;
+    try {
+      const res = await fetch(`${apiUrl}/users/${editingUser}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editForm),
+      });
+      if (!res.ok) throw new Error("Erro ao editar usuário");
+      setEditingUser(null);
+      setEditForm({});
+      onClientUpdated(editForm as User, "edit");
+    } catch (err) {
+      console.error(err);
+      alert("Falha ao salvar alterações.");
+    }
+  };
+
+  const handleDelete = async (client: User) => {
+    const confirmar = window.confirm(`Tem certeza que deseja excluir o cliente "${client.name}"?`);
+    if (!confirmar) return;
+
+    try {
+      const res = await fetch(`${apiUrl}/users/${client.user}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Erro ao excluir usuário");
+      onClientUpdated(client, "delete");
+    } catch (err) {
+      console.error(err);
+      alert("Falha ao excluir cliente.");
+    }
+  };
+
   return (
     <div className="bg-[#FFFFFF] rounded-2xl shadow-sm border border-[#CBD5E0]">
       <div className="px-6 py-4 border-b border-[#CBD5E0] flex justify-between items-center">
@@ -61,36 +113,154 @@ export default function ClientTable({
           <tbody>
             {clients
               .filter((c) => c.token !== "adm")
-              .map((client, idx) => (
-                <tr
-                  key={idx}
-                  className="border-b border-[#F4F5F7] hover:bg-[#F4F5F7]"
-                >
-                  <td className="py-3 px-4 text-[#1A2433]">{client.name}</td>
-                  <td className="py-3 px-4 text-[#4A5568]">{client.email}</td>
-                  <td className="py-3 px-4 text-[#4A5568]">
-                    {client.data_cadastro
-                      ? new Date(client.data_cadastro + "T00:00:00").toLocaleDateString("pt-BR")
-                      : "—"}
-                  </td>
-                  <td className="py-3 px-4 text-[#1A2433]">
-                    R$ {(client.valor_aportado || 0).toLocaleString("pt-BR")}
-                  </td>
-                  <td className="py-3 px-4 text-[#1A2433]">
-                    {client.percentual_contrato
-                      ? `${client.percentual_contrato}%`
-                      : "—"}
-                  </td>
-                  <td className="py-3 px-4">
-                    <button
-                      onClick={() => onSelectClient(client)}
-                      className="text-emerald-500 hover:text-[#00A676] text-sm font-medium"
-                    >
-                      Informar Rendimentos
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              .map((client) => {
+                const isEditing = editingUser === client.user;
+                return (
+                  <tr
+                    key={client.user}
+                    className="border-b border-[#F4F5F7] hover:bg-[#F4F5F7]"
+                  >
+                    {/* Nome */}
+                    <td className="py-3 px-4 text-[#1A2433]">
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          className="border rounded px-2 py-1 w-full"
+                          value={editForm.name || ""}
+                          onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        />
+                      ) : (
+                        client.name
+                      )}
+                    </td>
+
+                    {/* Email */}
+                    <td className="py-3 px-4 text-[#4A5568]">
+                      {isEditing ? (
+                        <input
+                          type="email"
+                          className="border rounded px-2 py-1 w-full"
+                          value={editForm.email || ""}
+                          onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                        />
+                      ) : (
+                        client.email
+                      )}
+                    </td>
+
+                    {/* Data Cadastro */}
+                    <td className="py-3 px-4 text-[#4A5568]">
+                      {client.data_cadastro
+                        ? new Date(client.data_cadastro + "T00:00:00").toLocaleDateString("pt-BR")
+                        : "—"}
+                    </td>
+
+                    {/* Valor Aportado */}
+                    <td className="py-3 px-4 text-[#1A2433]">
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          className="border rounded px-2 py-1 w-full"
+                          value={editForm.valor_aportado || ""}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, valor_aportado: Number(e.target.value) })
+                          }
+                        />
+                      ) : (
+                        `R$ ${(client.valor_aportado || 0).toLocaleString("pt-BR")}`
+                      )}
+                    </td>
+
+                    {/* Percentual Contrato */}
+                    <td className="py-3 px-4 text-[#1A2433]">
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          className="border rounded px-2 py-1 w-full"
+                          value={editForm.percentual_contrato || ""}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, percentual_contrato: Number(e.target.value) })
+                          }
+                        />
+                      ) : (
+                        client.percentual_contrato ? `${client.percentual_contrato}%` : "—"
+                      )}
+                    </td>
+
+                    {/* Ações */}
+                    <td className="py-3 px-4 flex items-center space-x-3">
+                      {isEditing ? (
+                        <>
+                          <div className="relative group">
+                            <button
+                              onClick={handleSaveEdit}
+                              className="text-[#00A676] hover:text-[#00855C] transition-colors"
+                            >
+                              <Check className="w-5 h-5" />
+                            </button>
+                            <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition bg-[#00A676] text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                              Salvar
+                            </span>
+
+                          </div>
+                          <div className="relative group">
+                            <button
+                              onClick={handleCancelEdit}
+                              className="text-red-500 hover:text-red-600 transition-colors"
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                            <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition bg-red-500 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                              Cancelar
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {/* Informar rendimento */}
+                          <div className="relative group">
+                            <button
+                              onClick={() => onSelectClient(client)}
+                              className="text-[#4A5568] hover:text-secondary transition-colors"
+                            >
+                              <ClipboardList className="w-5 h-5" />
+                            </button>
+                            <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition bg-secondary text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                              Informar rendimento
+                            </span>
+                          </div>
+
+                          {/* Editar */}
+                          <div className="relative group">
+                            <button
+                              onClick={() => handleEditClick(client)}
+                              className="text-[#4A5568] hover:text-[#00A676] transition-colors"
+                            >
+                              <Pencil className="w-5 h-5" />
+                            </button>
+                            <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition bg-[#00A676] text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                              Editar
+                            </span>
+                          </div>
+
+                          {/* Excluir */}
+                          <div className="relative group">
+                            <button
+                              onClick={() => handleDelete(client)}
+                              className="text-[#4A5568] hover:text-red-500 transition-colors"
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                            <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition bg-red-500 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                              Excluir
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
           </tbody>
         </table>
       </div>

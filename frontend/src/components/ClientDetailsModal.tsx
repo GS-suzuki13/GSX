@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, TrendingUp, Calendar, Paperclip } from 'lucide-react';
+import { X, Plus, TrendingUp, Calendar, Paperclip, Pencil, Check } from 'lucide-react';
 import { User, ClientReturn } from '../types';
 
 interface ClientDetailsModalProps {
@@ -13,6 +13,9 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
   const [returnForm, setReturnForm] = useState({ percentual: '' });
   const [activeMonth, setActiveMonth] = useState<string>('');
   const [isImporting, setIsImporting] = useState(false);
+  const [editingReturn, setEditingReturn] = useState<ClientReturn | null>(null);
+  const [editForm, setEditForm] = useState({ percentual: '', variacao: '', rendimento: '' });
+
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const addOneDay = (date: string): string => {
@@ -25,13 +28,8 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
     const cadastroDate = new Date(dataCadastro);
     cadastroDate.setDate(cadastroDate.getDate() + 1);
     const today = new Date();
-
     cadastroDate.setFullYear(today.getFullYear(), today.getMonth(), cadastroDate.getDate());
-
-    if (cadastroDate <= today) {
-      cadastroDate.setMonth(cadastroDate.getMonth() + 1);
-    }
-
+    if (cadastroDate <= today) cadastroDate.setMonth(cadastroDate.getMonth() + 1);
     return cadastroDate.toLocaleDateString('pt-BR');
   };
 
@@ -40,14 +38,12 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
       const response = await fetch(`${apiUrl}/returns/${client.user}`);
       if (!response.ok) throw new Error('Erro ao carregar rendimentos');
       const data = await response.json();
-
       const parsed: ClientReturn[] = data.map((item: any) => ({
         data: item.data,
         percentual: parseFloat(item.percentual),
         variacao: parseFloat(item.variacao),
         rendimento: parseFloat(item.rendimento)
       }));
-
       setReturns(parsed);
 
       if (parsed.length > 0) {
@@ -66,9 +62,7 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
 
   const handleAddReturn = async (e: React.FormEvent) => {
     e.preventDefault();
-
     const lastReturn = returns[returns.length - 1];
-
     const percentualTotal = parseFloat(returnForm.percentual);
     const percentual = (percentualTotal / 100) * (client.percentual_contrato / 100);
     const lastPercentual = lastReturn ? lastReturn.percentual : 0;
@@ -101,6 +95,64 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
     }
   };
 
+  const handleDeleteReturn = async (returnItem: ClientReturn) => {
+    try {
+      const response = await fetch(`${apiUrl}/returns/${client.user}/${returnItem.data}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Erro ao excluir rendimento');
+      setReturns(prev => prev.filter(r => r.data !== returnItem.data));
+    } catch (error) {
+      console.error('Erro ao excluir rendimento:', error);
+    }
+  };
+
+  // Editar rendimento
+  const handleEditClick = (returnItem: ClientReturn) => {
+    setEditingReturn(returnItem);
+    setEditForm({
+      percentual: returnItem.percentual.toString(),
+      variacao: returnItem.variacao.toString(),
+      rendimento: returnItem.rendimento.toString(),
+    });
+  };
+
+  const handleEditSave = async () => {
+    if (!editingReturn) return;
+
+    const confirmEdit = window.confirm("Tem certeza que deseja salvar as alterações?");
+    if (!confirmEdit) return;
+
+    // Enviar apenas os campos editáveis
+    const updatedData = {
+      percentual: parseFloat(editForm.percentual),
+      variacao: parseFloat(editForm.variacao),
+      rendimento: parseFloat(editForm.rendimento),
+    };
+
+    try {
+      const response = await fetch(`${apiUrl}/returns/${client.user}/${editingReturn.data}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedData),
+      });
+
+      if (!response.ok) throw new Error("Erro ao atualizar rendimento");
+
+      const result = await response.json();
+
+      // Atualiza localmente com o que voltou do backend
+      setReturns(prev =>
+        prev.map(r => r.data === editingReturn.data ? result.return : r)
+      );
+
+      setEditingReturn(null);
+    } catch (error) {
+      console.error("Erro ao editar rendimento:", error);
+    }
+  };
+
+
   // Importar histórico CSV
   const handleImportHistory = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
@@ -115,9 +167,7 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
         method: 'POST',
         body: formData,
       });
-
       if (!response.ok) throw new Error('Erro ao importar histórico');
-
       await loadClientReturns();
     } catch (error) {
       console.error('Erro ao importar histórico:', error);
@@ -201,17 +251,11 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
             <div className="px-4 py-3 border-b border-[#CBD5E0] flex items-center justify-between">
               <h3 className="font-medium text-[#1A2433]">Histórico de Rendimentos</h3>
 
-              {/* Botões alinhados à direita */}
               <div className="flex items-center gap-2">
                 <label className="flex items-center justify-center gap-1 w-auto min-w-[120px] px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-md cursor-pointer text-sm font-medium text-[#1A2433] text-center">
                   <Paperclip className="w-4 h-4" />
                   {isImporting ? 'Importando...' : 'Importar'}
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={handleImportHistory}
-                    className="hidden"
-                  />
+                  <input type="file" accept=".csv" onChange={handleImportHistory} className="hidden" />
                 </label>
 
                 <button
@@ -261,7 +305,6 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
                   month: 'long',
                   year: 'numeric',
                 });
-
                 return (
                   <button
                     key={monthKey}
@@ -286,27 +329,83 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
                     <th className="text-left py-3 px-4 font-medium text-[#1A2433] text-sm">Percentual</th>
                     <th className="text-left py-3 px-4 font-medium text-[#1A2433] text-sm">Variação</th>
                     <th className="text-left py-3 px-4 font-medium text-[#1A2433] text-sm">Rendimento</th>
+                    <th className="text-left py-3 px-4 font-medium text-[#1A2433] text-sm">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(groupedByMonth[activeMonth] || []).map((returnItem, index) => (
                     <tr key={index} className="border-b border-[#F4F5F7] hover:bg-[#F4F5F7]">
-                      <td className="py-3 px-4 text-[#1A2433] text-sm">
-                        {addOneDay(returnItem.data)}
-                      </td>
-                      <td className={`py-3 px-4 font-medium text-sm ${returnItem.percentual >= 0 ? "text-[#00A676]" : "text-[#D64545]"
-                        }`}>
-                        {returnItem.percentual.toFixed(3)}%
-                      </td>
-                      <td
-                        className={`py-3 px-4 font-medium text-sm ${returnItem.variacao >= 0 ? "text-[#00A676]" : "text-[#D64545]"
-                          }`}
-                      >
-                        {returnItem.variacao.toFixed(3)}%
-                      </td>
-                      <td className="py-3 px-4 text-[#00A676] font-medium text-sm">
-                        R$ {returnItem.rendimento.toFixed(2)}
-                      </td>
+                      <td className="py-3 px-4 text-[#1A2433] text-sm">{addOneDay(returnItem.data)}</td>
+
+                      {editingReturn?.data === returnItem.data ? (
+                        <>
+                          <td className="py-3 px-4">
+                            <input
+                              type="number"
+                              step="0.001"
+                              value={editForm.percentual}
+                              onChange={(e) => setEditForm({ ...editForm, percentual: e.target.value })}
+                              className="px-2 py-1 border rounded-md w-24 text-sm"
+                            />
+                          </td>
+                          <td className="py-3 px-4">
+                            <input
+                              type="number"
+                              step="0.001"
+                              value={editForm.variacao}
+                              onChange={(e) => setEditForm({ ...editForm, variacao: e.target.value })}
+                              className="px-2 py-1 border rounded-md w-24 text-sm"
+                            />
+                          </td>
+                          <td className="py-3 px-4">
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={editForm.rendimento}
+                              onChange={(e) => setEditForm({ ...editForm, rendimento: e.target.value })}
+                              className="px-2 py-1 border rounded-md w-32 text-sm"
+                            />
+                          </td>
+                          <td className="py-3 px-4 flex gap-2">
+                            <button onClick={handleEditSave} className="p-1 hover:bg-green-100 rounded-md transition-colors">
+                              <Check className="w-4 h-4 text-green-600" />
+                            </button>
+                            <button onClick={() => setEditingReturn(null)} className="p-1 hover:bg-gray-100 rounded-md transition-colors">
+                              <X className="w-4 h-4 text-gray-600" />
+                            </button>
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td className={`py-3 px-4 font-medium text-sm ${returnItem.percentual >= 0 ? "text-[#00A676]" : "text-[#D64545]"}`}>
+                            {returnItem.percentual.toFixed(3)}%
+                          </td>
+                          <td className={`py-3 px-4 font-medium text-sm ${returnItem.variacao >= 0 ? "text-[#00A676]" : "text-[#D64545]"}`}>
+                            {returnItem.variacao.toFixed(3)}%
+                          </td>
+                          <td className="py-3 px-4 text-[#00A676] font-medium text-sm">
+                            R$ {returnItem.rendimento.toFixed(2)}
+                          </td>
+                          <td className="py-3 px-4 flex gap-2">
+                            <div className="relative group">
+                              <button onClick={() => handleEditClick(returnItem)} className="p-1 hover:bg-blue-100 rounded-md transition-colors text-primary">
+                                <Pencil className="w-4 h-4 text-[#00A676]" />
+                              </button>
+                              <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition bg-[#00A676] text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                                Editar
+                              </span>
+                            </div>
+                            <div className="relative group">
+                              <button onClick={() => handleDeleteReturn(returnItem)} className="p-1 hover:bg-red-100 rounded-md transition-colors">
+                                <X className="w-4 h-4 text-red-500" />
+                              </button>
+                              <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition bg-red-500 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                                Excluir
+                              </span>
+                            </div>
+                          </td>
+                        </>
+                      )}
                     </tr>
                   ))}
                 </tbody>
