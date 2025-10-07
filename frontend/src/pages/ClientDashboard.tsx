@@ -28,20 +28,41 @@ export default function ClientDashboard({ user, onLogout }: ClientDashboardProps
 
   useEffect(() => setFullName(user?.name ?? null), [user]);
 
-  const calculateNextRepasse = (dataCadastro: string): string => {
-    const cadastroDate = new Date(dataCadastro);
-    cadastroDate.setDate(cadastroDate.getDate() + 1);
-    const today = new Date();
-
-    cadastroDate.setFullYear(today.getFullYear(), today.getMonth(), cadastroDate.getDate());
-
-    if (cadastroDate <= today) {
-      cadastroDate.setMonth(cadastroDate.getMonth() + 1);
-    }
-
-    return cadastroDate.toLocaleDateString('pt-BR');
+  const isWeekend = (date: Date) => {
+    const day = date.getDay();
+    return day === 0 || day === 6;
   };
 
+  const getNextBusinessDay = (date: Date): Date => {
+    const newDate = new Date(date);
+    while (isWeekend(newDate)) {
+      newDate.setDate(newDate.getDate() + 1);
+    }
+    return newDate;
+  };
+
+  const calculateNextRepasse = (dataCadastro: string): string => {
+    const cadastroDate = new Date(dataCadastro);
+    cadastroDate.setDate(cadastroDate.getDate() + 1)
+    const today = new Date();
+
+    const repasse = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      cadastroDate.getDate(),
+      0, 0, 0
+    );
+
+    if (repasse < today) {
+      repasse.setMonth(repasse.getMonth() + 1);
+    }
+
+    const nextBusinessDay = getNextBusinessDay(repasse);
+
+    return nextBusinessDay.toLocaleDateString('pt-BR', {
+      timeZone: 'America/Sao_Paulo'
+    });
+  };
   // Cards resumo
   const dashboardCards = [
     {
