@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { DollarSign, TrendingUp, PieChart, Calendar } from 'lucide-react';
+import { DollarSign, TrendingUp, Calendar } from 'lucide-react';
 import { User } from '../types';
 import { useClientReturns } from '../hooks/useClientReturns';
-import MonthTabs from '../components/dashboard/MonthTabs';
 import Header from '../components/layout/Header';
 import DashboardCard from '../components/DashboardCard';
 import PerformanceChart from '../components/PerformanceChart';
 import ReturnsTable from '../components/ReturnsTable';
+
+interface Repasse {
+  id: number;
+  label: string;
+  start: string;
+  end: string;
+}
 
 interface ClientDashboardProps {
   user: User;
@@ -15,54 +21,105 @@ interface ClientDashboardProps {
 
 export default function ClientDashboard({ user, onLogout }: ClientDashboardProps) {
   const [fullName, setFullName] = useState<string | null>(null);
+  const [repasses, setRepasses] = useState<Repasse[]>([]);
+  const [returns, setReturns] = useState<any[]>([]);
+  const [selectedRepasseId, setSelectedRepasseId] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const {
-    total,
-    last,
-    monthsGrouped,
-    current,
-    chart,
-    selectedMonth,
-    setSelectedMonth,
-  } = useClientReturns(user);
+  const apiUrl = import.meta.env.VITE_API_URL;
+  const { total, last } = useClientReturns(user);
 
   useEffect(() => setFullName(user?.name ?? null), [user]);
 
-  const isWeekend = (date: Date) => {
-    const day = date.getDay();
-    return day === 0 || day === 6;
+  // Carrega repasses
+  const loadRepasses = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/repasse/${user.user}`);
+      if (!res.ok) throw new Error('Erro ao carregar repasses');
+      const data = await res.json();
+      const repArray: Repasse[] = Array.isArray(data.repasses) ? data.repasses : data;
+      setRepasses(repArray);
+
+      // Seleciona o último repasse automaticamente
+      if (repArray.length > 0) {
+        setSelectedRepasseId(repArray[repArray.length - 1].id);
+      } else {
+        setSelectedRepasseId(null);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Carrega rendimentos
+  const loadReturns = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/returns/${user.user}`);
+      if (!res.ok) throw new Error('Erro ao carregar rendimentos');
+      const data = await res.json();
+      const parsed = data.map((r: any) => ({
+        data: r.data,
+        percentual: parseFloat(r.percentual),
+        rendimento: parseFloat(r.rendimento),
+        repasseId: r.repasseId,
+        userId: r.userId,
+      }));
+      setReturns(parsed);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      loadRepasses();
+      loadReturns();
+    }
+  }, [user]);
+
+  // Filtro igual ao ClientDetailsModal
+  const filteredReturns =
+    returns
+      .filter((r) =>
+        selectedRepasseId ? r.repasseId === selectedRepasseId : r.userId === user.user
+      )
+      .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime()) ?? [];
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
   };
 
   const getNextBusinessDay = (date: Date): Date => {
     const newDate = new Date(date);
-    while (isWeekend(newDate)) {
-      newDate.setDate(newDate.getDate() + 1);
-    }
+    while (newDate.getDay() === 0 || newDate.getDay() === 6) newDate.setDate(newDate.getDate() + 1);
     return newDate;
   };
 
-  const calculateNextRepasse = (dataCadastro: string): string => {
-    const cadastroDate = new Date(dataCadastro);
-    cadastroDate.setDate(cadastroDate.getDate() + 1)
-    const today = new Date();
+  const calculateNextRepasse = (dataCadastro: string, repasses: Repasse[]) => {
+    const lastRepasseEnd = repasses.length
+      ? new Date(repasses[repasses.length - 1].end)
+      : new Date(dataCadastro);
 
-    const repasse = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      cadastroDate.getDate(),
-      0, 0, 0
-    );
-
-    if (repasse < today) {
-      repasse.setMonth(repasse.getMonth() + 1);
+    let result = new Date(lastRepasseEnd);
+    let addedDays = 0;
+    while (addedDays < 30) {
+      result.setDate(result.getDate() + 1);
+      const day = result.getDay();
+      if (day !== 0 && day !== 6) addedDays++;
     }
-
-    const nextBusinessDay = getNextBusinessDay(repasse);
-
-    return nextBusinessDay.toLocaleDateString('pt-BR', {
-      timeZone: 'America/Sao_Paulo'
-    });
+    return result.toLocaleDateString('pt-BR');
   };
+
+  // Dados para gráfico
+  const chartData = filteredReturns.map((r) => ({
+    month: formatDate(r.data),
+    value: r.rendimento,
+  }));
+
   // Cards resumo
   const dashboardCards = [
     {
@@ -81,13 +138,13 @@ export default function ClientDashboard({ user, onLogout }: ClientDashboardProps
     {
       title: 'Rendimento Líquido',
       value: `R$ ${(total * 0.7).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-      change: last ? `+${((((total * 0.7 ) / (user.valor_aportado || 1)) * 100)).toFixed(2)}%` : '',
+      change: last ? `+${(((total * 0.7) / (user.valor_aportado || 1)) * 100).toFixed(2)}%` : '',
       icon: <TrendingUp className="w-8 h-8 text-[#00A676]" />,
       color: 'green' as const,
     },
     {
-      title: 'Seu Proximo Repasse',
-      value: calculateNextRepasse(user.data_cadastro),
+      title: 'Seu Próximo Repasse',
+      value: calculateNextRepasse(user.data_cadastro, repasses),
       icon: <Calendar className="w-8 h-8 text-[#1A2433]" />,
       color: 'purple' as const,
     },
@@ -95,10 +152,7 @@ export default function ClientDashboard({ user, onLogout }: ClientDashboardProps
 
   return (
     <div className="min-h-screen font-[Inter,sans-serif] bg-[#F4F5F7]">
-      <Header
-        title="Dashboard do Cliente"
-        onLogout={onLogout}
-      />
+      <Header title="Dashboard do Cliente" onLogout={onLogout} />
 
       <main className="container mx-auto px-6 py-8">
         {/* Saudação */}
@@ -116,39 +170,55 @@ export default function ClientDashboard({ user, onLogout }: ClientDashboardProps
           ))}
         </div>
 
+        {/* Dropdown de Repasse */}
+        {repasses.length > 0 && (
+          <div className="mb-4">
+            <select
+              value={selectedRepasseId ?? ''}
+              onChange={(e) => setSelectedRepasseId(Number(e.target.value) || null)}
+              className="px-3 py-2 border rounded-md text-sm"
+            >
+              <option value="">Todos os rendimentos</option>
+              {repasses.map((rep) => (
+                <option key={rep.id} value={rep.id}>
+                  {rep.label} ({formatDate(rep.start)} - {formatDate(rep.end)})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Histórico de Rendimentos */}
         <section className="rounded-2xl p-8 shadow-sm bg-white">
           <h3 className="text-xl font-semibold mb-6 text-[#1A2433]">Histórico de Rendimentos</h3>
 
-          <MonthTabs
-            months={monthsGrouped}
-            selected={selectedMonth}
-            onSelect={setSelectedMonth}
-          />
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="rounded-xl p-4 shadow-sm min-h-[320px] bg-[#F4F5F7]">
-              <PerformanceChart data={chart} />
+          {isLoading ? (
+            <p className="text-gray-500">Carregando rendimentos...</p>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="rounded-xl p-4 shadow-sm min-h-[320px] bg-[#F4F5F7]">
+                <PerformanceChart data={chartData} />
+              </div>
+              <div className="rounded-xl p-4 shadow-sm min-h-[320px] bg-[#F4F5F7]">
+                <ReturnsTable
+                  data={filteredReturns}
+                  columns={[
+                    { key: 'data', label: 'Data' },
+                    {
+                      key: 'rendimento',
+                      label: 'Rendimento (R$)',
+                      render: (v) => (
+                        <span className="text-green-600 font-medium">
+                          R$ {Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
+                      ),
+                      align: 'right',
+                    },
+                  ]}
+                />
+              </div>
             </div>
-            <div className="rounded-xl p-4 shadow-sm min-h-[320px] bg-[#F4F5F7]">
-              <ReturnsTable
-                data={current?.items ?? []}
-                columns={[
-                  { key: 'data', label: 'Data' },
-                  {
-                    key: 'rendimento',
-                    label: 'Rendimento (R$)',
-                    render: (v) => (
-                      <span className="text-green-600 font-medium">
-                        R$ {Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </span>
-                    ),
-                    align: 'right',
-                  },
-                ]}
-              />
-            </div>
-          </div>
+          )}
         </section>
 
         {/* Valor Bruto vs Valor Líquido */}

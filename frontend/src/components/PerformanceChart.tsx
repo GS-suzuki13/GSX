@@ -109,19 +109,6 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({ data }) => {
             );
           })}
 
-          {/* Labels eixo X */}
-          {data.map((point, index) => (
-            <text
-              key={index}
-              x={50 + (index / (data.length - 1)) * 700}
-              y={275}
-              textAnchor="middle"
-              className="text-sm fill-gray-600"
-            >
-              {point.month}
-            </text>
-          ))}
-
           {/* Labels eixo Y */}
           {[0, 1, 2, 3, 4].map((i) => {
             const value = minValue + (range * i) / 4;

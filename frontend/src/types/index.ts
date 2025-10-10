@@ -11,10 +11,13 @@ export interface User {
 }
 
 export interface ClientReturn {
+  id?: number;
   data: string;
   percentual: number;
   variacao: number;
   rendimento: number;
+  userId?: string;
+  repasseId: number
 }
 
 export interface DashboardCard {

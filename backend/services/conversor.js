@@ -1,7 +1,9 @@
-// conversor.js
 const fs = require("fs");
 const readline = require("readline");
+const User = require("../models/User");
+const Return = require("../models/Return");
 
+// Funções auxiliares
 function parseDateBRtoISO(dateStr) {
   if (!dateStr || typeof dateStr !== "string") return null;
   const m = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
@@ -11,10 +13,9 @@ function parseDateBRtoISO(dateStr) {
 }
 
 function cleanString(s = "") {
-  return String(s).replace(/(^\s+|\s+$)/g, "").replace(/^"(.+)"$/, "$1");
+  return String(s).trim().replace(/^"(.+)"$/, "$1");
 }
 
-// split CSV line respeitando aspas
 function splitCSVLine(line) {
   const cols = [];
   let cur = "";
@@ -37,33 +38,37 @@ function splitCSVLine(line) {
 }
 
 function parsePercent(raw) {
-  if (raw == null) return null;
+  if (!raw) return null;
   const s = cleanString(raw).replace("%", "").trim();
-  if (s === "") return null;
+  if (!s) return null;
   const normalized = s.replace(/\./g, "").replace(",", ".").trim();
   const n = Number(normalized);
   return Number.isFinite(n) ? n : null;
 }
 
 function parseMoney(raw) {
-  if (raw == null) return null;
+  if (!raw) return null;
   const s = cleanString(raw).replace("R$", "").trim();
-  if (s === "") return null;
+  if (!s) return null;
   const normalized = s.replace(/\./g, "").replace(",", ".").trim();
   const n = Number(normalized);
   return Number.isFinite(n) ? n : null;
 }
 
-async function conversor(filePath) {
-  return new Promise((resolve, reject) => {
-    const results = [];
+// Conversor principal
+async function conversor(filePath, clientUser) {
+  const user = await User.findByPk(clientUser);
+  if (!user) throw new Error(`Usuário ${clientUser} não encontrado`);
 
+  const results = [];
+
+  return new Promise((resolve, reject) => {
     const rl = readline.createInterface({
       input: fs.createReadStream(filePath),
       crlfDelay: Infinity,
     });
 
-    rl.on("line", (rawLine) => {
+    rl.on("line", async (rawLine) => {
       try {
         const line = rawLine.replace(/\r/g, "");
         if (!line.trim()) return;
@@ -74,32 +79,32 @@ async function conversor(filePath) {
         const dateIdx = parts.findIndex((p) => /\d{2}\/\d{2}\/\d{4}/.test(p));
         if (dateIdx === -1) return;
 
-        const rawDate = parts[dateIdx];
-        const rawPercent = parts[dateIdx + 2] ?? "";
-        const rawVariacao = parts[dateIdx + 3] ?? "";
-        const rawRendimento = parts[dateIdx + 4] ?? "";
+        const dataISO = parseDateBRtoISO(parts[dateIdx]);
+        const percentual = parsePercent(parts[dateIdx + 2] ?? "");
+        const variacao = parsePercent(parts[dateIdx + 3] ?? "");
+        const rendimento = parseMoney(parts[dateIdx + 4] ?? "");
 
-        const dataISO = parseDateBRtoISO(rawDate);
-        if (!dataISO) return;
+        // Ignora linha se todos os valores forem nulos ou data inválida
+        if (!dataISO || (percentual === null && variacao === null && rendimento === null)) return;
 
-        const percentual = parsePercent(rawPercent);
-        const variacao = parsePercent(rawVariacao);
-        const rendimento = parseMoney(rawRendimento);
-
-        if (percentual === null && variacao === null && rendimento === null) return;
-
-        results.push({
+        const row = {
           data: dataISO,
           percentual,
           variacao,
           rendimento,
-        });
+          userId: user.user,
+        };
+
+        results.push(row);
+
+        // Insere no banco apenas se houver algum valor válido
+        await Return.create(row);
       } catch (err) {
-        console.error("Erro ao processar linha:", rawLine, err);
+        // ignora erros de linha para não travar a importação
       }
     });
 
-    rl.on("close", () => resolve(results));
+    rl.on("close", () => resolve({ success: true, message: "Importação concluída", data: results }));
     rl.on("error", reject);
   });
 }

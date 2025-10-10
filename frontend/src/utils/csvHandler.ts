@@ -33,7 +33,7 @@ export class CSVHandler {
   }
   // Autenticação de login
   static async authenticateUser(username: string, password: string): Promise<User | null> {
-    const res = await fetch(`${apiUrl}/login`, {
+    const res = await fetch(`${apiUrl}/users/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user: username, password }),
