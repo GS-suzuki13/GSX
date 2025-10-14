@@ -124,20 +124,20 @@ export default function ClientDashboard({ user, onLogout }: ClientDashboardProps
   const dashboardCards = [
     {
       title: 'Valor Aportado',
-      value: `R$ ${user.valor_aportado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      value: `R$ ${user.valor_aportado.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       icon: <DollarSign className="w-8 h-8 text-[#1A2433]" />,
       color: 'blue' as const,
     },
     {
       title: 'Rendimento Bruto',
-      value: `R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      value: `R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       change: last ? `+${(last.percentual ?? 0).toFixed(2)}%` : '',
       icon: <TrendingUp className="w-8 h-8 text-[#00A676]" />,
       color: 'green' as const,
     },
     {
       title: 'Rendimento Líquido',
-      value: `R$ ${(total * 0.7).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      value: `R$ ${(total * 0.7).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       change: last ? `+${(((total * 0.7) / (user.valor_aportado || 1)) * 100).toFixed(2)}%` : '',
       icon: <TrendingUp className="w-8 h-8 text-[#00A676]" />,
       color: 'green' as const,
@@ -209,7 +209,7 @@ export default function ClientDashboard({ user, onLogout }: ClientDashboardProps
                       label: 'Rendimento (R$)',
                       render: (v) => (
                         <span className="text-green-600 font-medium">
-                          R$ {Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          R$ {Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       ),
                       align: 'right',
@@ -227,15 +227,15 @@ export default function ClientDashboard({ user, onLogout }: ClientDashboardProps
           <div className="rounded-xl p-6 shadow-sm bg-[#F4F5F7]">
             <p className="text-[#1A2433] mb-2">
               <strong>Rendimento Bruto:</strong>{' '}
-              R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <p className="text-[#D64545] mb-2">
               <strong>GSX (30%):</strong>{' '}
-              R$ {(total * 0.3).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {(total * 0.3).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <p className="text-[#00A676]">
               <strong>Rendimento Líquido:</strong>{' '}
-              R$ {(total * 0.7).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {(total * 0.7).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
         </section>

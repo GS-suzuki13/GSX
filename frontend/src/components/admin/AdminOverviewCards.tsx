@@ -19,7 +19,7 @@ export default function AdminOverviewCards({ clients }: AdminOverviewCardsProps)
       title: "Ativos sob Gestão",
       value: `R$ ${clients
         .reduce((sum, c) => sum + Number(c.valor_aportado || 0), 0)
-        .toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+        .toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       color: "green" as const,
       icon: <TrendingUp className="w-8 h-8 text-green-600" />
     }

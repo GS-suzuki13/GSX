@@ -17,7 +17,7 @@ export interface ClientReturn {
   variacao: number;
   rendimento: number;
   userId?: string;
-  repasseId: number
+  repasseId?: number
 }
 
 export interface DashboardCard {

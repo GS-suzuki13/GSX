@@ -160,14 +160,21 @@ export default function ClientTable({
                       {isEditing ? (
                         <input
                           type="number"
+                          step="0.01"
                           className="border rounded px-2 py-1 w-full"
-                          value={editForm.valor_aportado || ""}
+                          value={editForm.valor_aportado?.toFixed(2) || ""}
                           onChange={(e) =>
-                            setEditForm({ ...editForm, valor_aportado: Number(e.target.value) })
+                            setEditForm({
+                              ...editForm,
+                              valor_aportado: Number(e.target.value),
+                            })
                           }
                         />
                       ) : (
-                        `R$ ${(client.valor_aportado || 0).toLocaleString("pt-BR")}`
+                        `R$ ${(client.valor_aportado || 0).toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}`
                       )}
                     </td>
 

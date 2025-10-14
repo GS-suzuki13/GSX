@@ -119,11 +119,6 @@
     const handleAddReturn = async (e: React.FormEvent) => {
       e.preventDefault();
 
-      if (!selectedRepasseId) {
-        alert("Selecione um repasse antes de adicionar um rendimento.");
-        return;
-      }
-
       const percentualTotal = parseFloat(returnForm.percentual);
       const percentual = (percentualTotal / 100) * (client.percentual_contrato / 100);
       const rendimento = client.valor_aportado * percentual;
@@ -136,7 +131,6 @@
         percentual: parseFloat(fomatedPercentual.toFixed(3)),
         variacao: parseFloat(variacao.toFixed(3)),
         rendimento: parseFloat(rendimento.toFixed(2)),
-        repasseId: selectedRepasseId,
       };
 
       try {
@@ -154,6 +148,7 @@
         console.error(err);
       }
     };
+
 
     // Criar novo repasse automaticamente
     const handleCloseRepasse = async () => {
@@ -338,7 +333,7 @@
 
                   <button
                     onClick={handleCloseRepasse}
-                    // disabled={!isRepasseToday(client.data_cadastro, repasses)}
+                    disabled={!isRepasseToday(client.data_cadastro, repasses)}
                     className={`w-auto min-w-[120px] px-3 py-2 text-white text-sm font-medium rounded-md transition-colors ${
                       isRepasseToday(client.data_cadastro, repasses)
                         ? 'bg-blue-600 hover:bg-blue-700'
