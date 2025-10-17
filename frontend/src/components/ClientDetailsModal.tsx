@@ -290,7 +290,10 @@
                   <TrendingUp className="w-8 h-8 mr-3" />
                   <div>
                     <p className="text-sm font-medium">Valor Aportado</p>
-                    <p className="text-xl font-bold">R$ {client.valor_aportado.toLocaleString('pt-BR')}</p>
+                    <p className="text-xl font-bold">R$ {client.valor_aportado.toLocaleString('pt-BR', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}</p>
                   </div>
                 </div>
               </div>
@@ -299,7 +302,10 @@
                   <TrendingUp className="w-8 h-8 text-green-600 mr-3" />
                   <div>
                     <p className="text-sm font-medium">Rendimento Total</p>
-                    <p className="text-xl font-bold text-green-600">R$ {totalReturn.toLocaleString('pt-BR')}</p>
+                    <p className="text-xl font-bold text-green-600">R$ {totalReturn.toLocaleString('pt-BR', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}</p>
                   </div>
                 </div>
               </div>
