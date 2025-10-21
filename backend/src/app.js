@@ -19,7 +19,7 @@ app.use("/returns/import", importRoutes);
 app.use("/repasse", repasseRoutes); // rota para repasses
 
 // Sincroniza models com o DB (use alter:true para atualizar tabelas sem perder dados)
-sequelize.authenticate({ alter: true }).then(() => {
+sequelize.authenticate({ alter: false }).then(() => {
   console.log("Banco sincronizado");
 });
 
