@@ -3,11 +3,11 @@ const User = require("../../models/User");
 
 exports.getAll = async (req, res) => {
   try {
-    const userId = req.params.userId;
+    const userId = req.params.id; // ← altere aqui
     const user = await User.findByPk(userId);
     if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
 
-    const filter = { userId }; // agora filter já usa o id
+    const filter = { userId };
     if (req.query.repasseId) filter.repasseId = req.query.repasseId;
 
     const returns = await Return.findAll({ where: filter });
@@ -20,7 +20,8 @@ exports.getAll = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
-    const user = await User.findByPk(req.params.clientUser);
+    const userId = req.params.id;
+    const user = await User.findByPk(userId);
     if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
 
     const newReturn = await Return.create({
@@ -40,8 +41,9 @@ exports.create = async (req, res) => {
 
 exports.update = async (req, res) => {
   try {
-    const { clientUser, date } = req.params;
-    const user = await User.findByPk(clientUser);
+    const date = req.params.date;
+    const userId = req.params.id;
+    const user = await User.findByPk(userId);
     if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
 
     const rendimento = await Return.findOne({
@@ -63,8 +65,9 @@ exports.update = async (req, res) => {
 
 exports.remove = async (req, res) => {
   try {
-    const { clientUser, date } = req.params;
-    const user = await User.findByPk(clientUser);
+    const date = req.params.date;
+    const userId = req.params.id;
+    const user = await User.findByPk(userId);
     if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
 
     const rendimento = await Return.findOne({
@@ -73,6 +76,7 @@ exports.remove = async (req, res) => {
     if (!rendimento)
       return res.status(404).json({ error: "Rendimento não encontrado" });
 
+    await user.update({ data_modificacao: new Date() });
     await rendimento.destroy();
     res.json({ success: true });
   } catch (err) {

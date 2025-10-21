@@ -277,40 +277,59 @@
 
           {/* Conteúdo */}
           <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
-            {/* Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-gray-100 rounded-lg p-4">
-                <div className="flex items-center">
-                  <TrendingUp className="w-8 h-8 mr-3" />
-                  <div>
-                    <p className="text-sm font-medium">Valor Aportado</p>
-                    <p className="text-xl font-bold">R$ {client.valor_aportado.toLocaleString('pt-BR', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}</p>
-                  </div>
+            {/* Cards aprimorados */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {/* Valor Aportado */}
+              <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-blue-700">Valor Aportado</p>
+                  <TrendingUp className="w-6 h-6 text-blue-600" />
                 </div>
+                <p className="text-2xl font-bold text-blue-700 mt-2">
+                  R$ {client.valor_aportado.toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </p>
               </div>
-              <div className="bg-gray-100 rounded-lg p-4">
-                <div className="flex items-center">
-                  <TrendingUp className="w-8 h-8 text-green-600 mr-3" />
-                  <div>
-                    <p className="text-sm font-medium">Rendimento Total</p>
-                    <p className="text-xl font-bold text-green-600">R$ {totalReturn.toLocaleString('pt-BR', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}</p>
-                  </div>
+
+              {/* Rendimento Total */}
+              <div className="bg-green-50 border border-green-100 rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-green-700">Rendimento Total</p>
+                  <TrendingUp className="w-6 h-6 text-green-600" />
                 </div>
+                <p className="text-2xl font-bold text-green-700 mt-2">
+                  R$ {totalReturn.toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </p>
               </div>
-              <div className="bg-gray-100 rounded-lg p-4">
-                <div className="flex items-center">
-                  <Calendar className="w-8 h-8 mr-3" />
-                  <div>
-                    <p className="text-sm font-medium">Próximo Repasse</p>
-                    <p className="text-xl font-bold">{calculateNextRepasse(client.data_cadastro, repasses)}</p>
-                  </div>
+
+              {/* Rendimento Líquido */}
+              <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-emerald-700">Líquido</p>
+                  <TrendingUp className="w-6 h-6 text-emerald-600" />
                 </div>
+                <p className="text-2xl font-bold text-emerald-700 mt-2">
+                  R$ {(totalReturn * 0.7).toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </p>
+              </div>
+
+              {/* Próximo Repasse */}
+              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-gray-700">Próximo Repasse</p>
+                  <Calendar className="w-6 h-6 text-gray-600" />
+                </div>
+                <p className="text-2xl font-bold text-gray-900 mt-2">
+                  {calculateNextRepasse(client.data_cadastro, repasses)}
+                </p>
               </div>
             </div>
 
