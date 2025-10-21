@@ -16,6 +16,8 @@ export default function ClientRegistrationForm({ onClientRegistered }: ClientReg
     tipoUsuario: 'user' as 'user' | 'adm',
     percentualContrato: ''
   });
+
+  const [displayValor, setDisplayValor] = useState(''); // <-- valor formatado para o input
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -26,9 +28,7 @@ export default function ClientRegistrationForm({ onClientRegistered }: ClientReg
     return `${partes[0]}.${partes[partes.length - 1]}`;
   };
 
-  const generatePassword = (cpf: string): string => {
-    return cpf.replace(/\D/g, "").substring(0, 6);
-  };
+  const generatePassword = (cpf: string): string => cpf.replace(/\D/g, "").substring(0, 6);
 
   // Formatar CPF em tempo real
   const formatCPF = (value: string) => {
@@ -60,11 +60,30 @@ export default function ClientRegistrationForm({ onClientRegistered }: ClientReg
     return true;
   };
 
+  // --- FORMATAÇÃO DO VALOR APORTADO ---
+  const handleValorAportadoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, ""); // remove tudo que não é número
+    const numberValue = parseFloat(raw) / 100;
+
+    if (isNaN(numberValue)) {
+      setDisplayValor("");
+      setFormData(prev => ({ ...prev, valorAportado: "" }));
+      return;
+    }
+
+    const formatted = numberValue.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    });
+
+    setDisplayValor(formatted);
+    setFormData(prev => ({ ...prev, valorAportado: numberValue.toString() }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // validação de CPF antes de prosseguir
     if (!validateCPF(formData.cpf)) {
       alert("CPF inválido! Verifique e tente novamente.");
       setLoading(false);
@@ -73,6 +92,7 @@ export default function ClientRegistrationForm({ onClientRegistered }: ClientReg
 
     try {
       const newUser: UserType = {
+        id: crypto.randomUUID(),
         user: generateUsername(formData.nomeCompleto),
         password: generatePassword(formData.cpf),
         token: formData.tipoUsuario,
@@ -81,7 +101,8 @@ export default function ClientRegistrationForm({ onClientRegistered }: ClientReg
         email: formData.email,
         data_cadastro: new Date().toISOString().split('T')[0],
         valor_aportado: parseFloat(formData.valorAportado),
-        percentual_contrato: parseFloat(formData.percentualContrato)
+        percentual_contrato: parseFloat(formData.percentualContrato),
+        data_modificacao: new Date().toISOString(),
       };
 
       const response = await CSVHandler.addUser(newUser);
@@ -89,8 +110,6 @@ export default function ClientRegistrationForm({ onClientRegistered }: ClientReg
       if (response?.success) {
         onClientRegistered(newUser);
         setSuccess(true);
-
-        // Reset form
         setFormData({
           nomeCompleto: '',
           cpf: '',
@@ -99,6 +118,7 @@ export default function ClientRegistrationForm({ onClientRegistered }: ClientReg
           tipoUsuario: 'user',
           percentualContrato: ''
         });
+        setDisplayValor('');
       } else {
         console.error("[handleSubmit] Erro: backend não retornou sucesso");
       }
@@ -197,13 +217,13 @@ export default function ClientRegistrationForm({ onClientRegistered }: ClientReg
             <div className="relative">
               <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
-                type="number"
+                type="text"
                 name="valorAportado"
-                value={formData.valorAportado}
-                onChange={handleChange}
+                value={displayValor}
+                onChange={handleValorAportadoChange}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg"
-                placeholder="0.00"
-                step="0.01"
+                placeholder="R$ 0,00"
+                inputMode="numeric"
                 required
               />
             </div>
