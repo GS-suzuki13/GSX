@@ -23,7 +23,7 @@ const Return = sequelize.define("Return", {
     allowNull: false,
     references: {
       model: User,
-      key: "user",
+      key: "id",
     },
     onDelete: "CASCADE",
   },

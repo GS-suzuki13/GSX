@@ -48,8 +48,8 @@ export class CSVHandler {
   }
 
   // Retornos de um cliente
-  static async getClientReturns(clientUser: string): Promise<ClientReturn[]> {
-    const response = await fetch(`${apiUrl}/returns/${clientUser}`);
+  static async getClientReturns(userId: string): Promise<ClientReturn[]> {
+    const response = await fetch(`${apiUrl}/returns/${userId}`);
     if (!response.ok) throw new Error('Erro ao buscar retornos do cliente');
 
     const data = await response.json();
@@ -63,8 +63,8 @@ export class CSVHandler {
   }
 
   // Adicionar rendimento a um cliente
-  static async addClientReturn(clientUser: string, returnData: ClientReturn): Promise<void> {
-    const res = await fetch(`${apiUrl}/returns/${clientUser}`, {
+  static async addClientReturn(userId: string, returnData: ClientReturn): Promise<void> {
+    const res = await fetch(`${apiUrl}/returns/${userId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(returnData),

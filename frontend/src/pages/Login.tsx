@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { User, Lock, Eye, EyeOff, ImageOffIcon } from 'lucide-react';
+import { User, Lock, Eye, EyeOff } from 'lucide-react';
 import { CSVHandler } from '../utils/csvHandler';
-import logo from '../assets/logo.png'
+import logo from '../assets/logo.png';
 
 const Login: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -18,7 +18,6 @@ const Login: React.FC = () => {
     setError('');
 
     try {
-      // autentica usando o backend via CSVHandler
       const foundUser = await CSVHandler.authenticateUser(
         formData.username,
         formData.password
@@ -30,36 +29,36 @@ const Login: React.FC = () => {
         return;
       }
 
-      // salva dados básicos do usuário logado
-      localStorage.setItem('loggedUser', JSON.stringify(foundUser));
+      // Define role consistente para o ProtectedRoute
+      const role = foundUser.token === 'adm' ? 'admin' : 'user';
 
-      // redireciona de acordo com token/role
-      if (foundUser.token === 'user') {
+      // Salva o usuário logado no localStorage
+      localStorage.setItem(
+        'loggedUser',
+        JSON.stringify({ ...foundUser, role })
+      );
+
+      // Redireciona para o dashboard correto
+      if (role === 'user') {
         window.location.href = '/dashboard-cliente';
-      } else if (foundUser.token === 'adm') {
+      } else if (role === 'admin') {
         window.location.href = '/dashboard-admin';
-      } else {
-        setError('Token inválido para o usuário');
       }
+
     } catch (err) {
       console.error(err);
       setError('Erro ao autenticar usuário');
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary to-primary/90 flex items-center justify-center p-6">
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          {/* Centralizando a logo */}
           <div className="flex justify-center mb-4">
-            <img
-              src={logo}
-              alt="Logo GSX"
-              className="w-32 h-auto"
-            />
+            <img src={logo} alt="Logo GSX" className="w-32 h-auto" />
           </div>
           <h1 className="text-2xl font-semibold text-gray-800">Acesso ao Sistema</h1>
           <p className="text-gray-600 mt-2">Entre com suas credenciais</p>

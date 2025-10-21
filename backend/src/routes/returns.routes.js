@@ -4,9 +4,9 @@ const { getAll, create, update, remove } = require("../controllers/returns.contr
 const router = express.Router();
 
 // CRUD de retornos
-router.get('/:clientUser', getAll);
-router.post('/:clientUser', create);
-router.put('/:clientUser/:date', update);
-router.delete('/:clientUser/:date', remove);
+router.get('/:userId', getAll);
+router.post('/:userId', create);
+router.put('/:userId/:date', update);
+router.delete('/:userId/:date', remove);
 
 module.exports = router;

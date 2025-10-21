@@ -1,6 +1,8 @@
 import React, { Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import ProtectedRoute from './components/ProtectedRoute';
 
-// Lazy load components
+// Lazy load das páginas
 const App = React.lazy(() => import('./App'));
 const Login = React.lazy(() => import('./pages/Login'));
 const ClientDashboard = React.lazy(() => import('./pages/ClientDashboard'));
@@ -13,38 +15,42 @@ const LoadingSpinner = () => (
 );
 
 export const Router: React.FC = () => {
-  const path = window.location.pathname;
+  const storedUser = localStorage.getItem('loggedUser');
+  const user = storedUser ? JSON.parse(storedUser) : null;
 
-  const renderPage = () => {
-    switch (path) {
-      case '/login':
-        return <Login />;
-      case '/dashboard-cliente':
-        return <ClientDashboard 
-                user={JSON.parse(localStorage.getItem("loggedUser") || "{}")}
-                onLogout={() => {
-                  localStorage.removeItem("loggedUser");
-                  window.location.href = "/";
-                }}
-              />;
-      case '/dashboard-admin':
-        return (
-          <AdminDashboard
-            user={JSON.parse(localStorage.getItem("loggedUser") || "{}")}
-            onLogout={() => {
-              localStorage.removeItem("loggedUser");
-              window.location.href = "/";
-            }}
-          />
-        );
-      default:
-        return <App />;
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('loggedUser');
+    window.location.href = '/';
   };
 
   return (
-    <Suspense fallback={<LoadingSpinner />}>
-      {renderPage()}
-    </Suspense>
+    <BrowserRouter>
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
+          <Route path="/" element={<App />} />
+
+          <Route path="/login" element={<Login />} />
+
+          <Route
+            path="/dashboard-cliente"
+            element={
+              <ProtectedRoute allowedRole="user">
+                {user && <ClientDashboard user={user} onLogout={handleLogout} />}
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard-admin"
+            element={
+              <ProtectedRoute allowedRole="admin">
+                {user && <AdminDashboard user={user} onLogout={handleLogout} />}
+              </ProtectedRoute>
+            }
+          />
+
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Suspense>
+    </BrowserRouter>
   );
 };

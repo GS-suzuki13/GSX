@@ -29,7 +29,6 @@ async function fecharRepasse(userId) {
     ? new Date(ultimoRepasse.dataFim)
     : new Date(user.data_cadastro);
 
-  // Verificação de segurança
   if (isNaN(dataInicio.getTime())) {
     throw new Error(
       `Data inválida para dataInicio: ${
@@ -39,7 +38,6 @@ async function fecharRepasse(userId) {
   }
 
   const dataFim = addDiasUteis(dataInicio, 30);
-
   const dataInicioStr = dataInicio.toISOString().split("T")[0];
   const dataFimStr = dataFim.toISOString().split("T")[0];
 
@@ -61,9 +59,12 @@ async function fecharRepasse(userId) {
       },
     }
   );
+  
+  await user.update({ data_modificacao: new Date() });
 
   return repasse;
 }
+
 
 // Lista todos os repasses de um usuário
 async function getRepasses(userId) {

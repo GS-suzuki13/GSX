@@ -11,7 +11,7 @@ export const useClientReturns = (user: User) => {
   useEffect(() => {
     (async () => {
       try {
-        const data = await CSVHandler.getClientReturns(user.user);
+        const data = await CSVHandler.getClientReturns(user.id);
         setReturns(
           data.map((r: ClientReturn) => ({
             ...r,

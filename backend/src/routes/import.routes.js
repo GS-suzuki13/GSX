@@ -8,6 +8,6 @@ const { importReturns } = require("../controllers/import.controller");
 const upload = multer({ dest: UPLOAD_DIR });
 
 // Rota de importação
-router.post("/:clientUser", upload.single("file"), importReturns);
+router.post("/:id", upload.single("file"), importReturns);
 
 module.exports = router;

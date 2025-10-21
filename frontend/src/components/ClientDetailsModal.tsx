@@ -65,7 +65,7 @@
     // Carregar rendimentos
     const loadClientReturns = async () => {
       try {
-        const response = await fetch(`${apiUrl}/returns/${client.user}`);
+        const response = await fetch(`${apiUrl}/returns/${client.id}`);
         if (!response.ok) throw new Error('Erro ao carregar rendimentos');
         const data = await response.json();
         const parsed: ClientReturn[] = data.map((item: any) => ({
@@ -84,7 +84,7 @@
     // Carregar repasses
     const loadRepasses = async () => {
       try {
-        const response = await fetch(`${apiUrl}/repasse/${client.user}`);
+        const response = await fetch(`${apiUrl}/repasse/${client.id}`);
         if (!response.ok) throw new Error('Erro ao carregar repasses');
         const data = await response.json();
 
@@ -134,7 +134,7 @@
       };
 
       try {
-        const response = await fetch(`${apiUrl}/returns/${client.user}`, {
+        const response = await fetch(`${apiUrl}/returns/${client.id}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newReturn),
@@ -149,18 +149,15 @@
       }
     };
 
-
-    // Criar novo repasse automaticamente
     const handleCloseRepasse = async () => {
       try {
-        const response = await fetch(`${apiUrl}/repasse/close/${client.user}`, { method: 'POST' });
+        const response = await fetch(`${apiUrl}/repasse/close/${client.id}`, { method: 'POST' });
         if (!response.ok) throw new Error('Erro ao fechar repasse');
         const newRepasse = await response.json();
 
         setRepasses(prev => [...prev, newRepasse]);
         setSelectedRepasseId(newRepasse.id);
 
-        // Vincular rendimentos recentes ao novo repasse automaticamente
         const now = new Date();
         const updatedReturns = returns.map(r => {
           const rDate = new Date(r.data);
@@ -178,21 +175,18 @@
     const isRepasseToday = (clientDataCadastro: string, repasses: Repasse[]): boolean => {
       const today = new Date();
       
-      // Se não houver repasses ainda, o primeiro repasse é baseado na data de cadastro
       const lastRepasseEnd = repasses.length
         ? new Date(repasses[repasses.length - 1].end)
         : new Date(clientDataCadastro);
 
-      // Calcula próximo repasse (30 dias depois do último ou da data de cadastro)
       const nextRepasse = new Date(lastRepasseEnd);
       let addedDays = 0;
       while (addedDays < 30) {
         nextRepasse.setDate(nextRepasse.getDate() + 1);
         const day = nextRepasse.getDay();
-        if (day !== 0 && day !== 6) addedDays++; // pula sábado/domingo
+        if (day !== 0 && day !== 6) addedDays++;
       }
 
-      // Compara datas ignorando horário
       return today.toDateString() === nextRepasse.toDateString();
     };
 
@@ -215,7 +209,7 @@
         rendimento: parseFloat(editForm.rendimento),
       };
       try {
-        const response = await fetch(`${apiUrl}/returns/${client.user}/${editingReturn.data}`, {
+        const response = await fetch(`${apiUrl}/returns/${client.id}/${editingReturn.data}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updatedData),
@@ -232,7 +226,7 @@
     // Excluir rendimento
     const handleDeleteReturn = async (r: ClientReturn) => {
       try {
-        const response = await fetch(`${apiUrl}/returns/${client.user}/${r.data}`, { method: 'DELETE' });
+        const response = await fetch(`${apiUrl}/returns/${client.id}/${r.data}`, { method: 'DELETE' });
         if (!response.ok) throw new Error('Erro ao excluir rendimento');
         setReturns(prev => prev.filter(ret => ret.data !== r.data));
       } catch (err) {
@@ -253,7 +247,7 @@
       formData.append('file', file);
       setIsImporting(true);
       try {
-        const response = await fetch(`${apiUrl}/returns/import/${client.user}`, { method: 'POST', body: formData });
+        const response = await fetch(`${apiUrl}/returns/import/${client.id}`, { method: 'POST', body: formData });
         if (!response.ok) throw new Error('Erro ao importar histórico');
         await loadClientReturns();
       } catch (err) {

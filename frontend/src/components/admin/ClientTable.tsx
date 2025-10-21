@@ -7,8 +7,8 @@ const apiUrl = import.meta.env.VITE_API_URL;
 
 interface ClientTableProps {
   clients: User[];
-  sortBy: "nome" | "percentual" | "data";
-  onSortChange: (value: "nome" | "percentual" | "data") => void;
+  sortBy: "nome" | "percentual" | "data" | "data_modificacao";
+  onSortChange: (value: "nome" | "percentual" | "data" | "data_modificacao") => void;
   onSelectClient: (client: User) => void;
   onRegisterClient: () => void;
   onClientUpdated: (updatedClient: User, action: "edit" | "delete") => void;
@@ -26,7 +26,7 @@ export default function ClientTable({
   const [editForm, setEditForm] = useState<Partial<User>>({});
 
   const handleEditClick = (client: User) => {
-    setEditingUser(client.user);
+    setEditingUser(client.id);
     setEditForm(client);
   };
 
@@ -58,7 +58,7 @@ export default function ClientTable({
     if (!confirmar) return;
 
     try {
-      const res = await fetch(`${apiUrl}/users/${client.user}`, {
+      const res = await fetch(`${apiUrl}/users/${client.id}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Erro ao excluir usuário");
@@ -70,7 +70,7 @@ export default function ClientTable({
   };
 
   return (
-    <div className="bg-[#FFFFFF] rounded-2xl shadow-sm border border-[#CBD5E0]">
+    <div className="bg-[#FFFFFF] rounded-2xl shadow-sm border border-[#CBD5E0] w-full overflow-hidden">
       <div className="px-6 py-4 border-b border-[#CBD5E0] flex justify-between items-center">
         <h2 className="text-lg font-semibold text-[#1A2433]">Clientes</h2>
         <div className="flex items-center space-x-2">
@@ -78,13 +78,14 @@ export default function ClientTable({
           <select
             value={sortBy}
             onChange={(e) =>
-              onSortChange(e.target.value as "nome" | "percentual" | "data")
+              onSortChange(e.target.value as "nome" | "percentual" | "data" | "data_modificacao")
             }
             className="border border-[#CBD5E0] rounded-lg px-3 py-2 text-sm text-[#1A2433]"
           >
             <option value="nome">Nome (A-Z)</option>
             <option value="percentual">Percentual Contrato</option>
             <option value="data">Data de Cadastro</option>
+            <option value="data_modificacao">Última Alteração</option>
           </select>
         </div>
         <button
@@ -96,14 +97,14 @@ export default function ClientTable({
         </button>
       </div>
 
-      <div className="p-6 overflow-x-auto">
-        <table className="w-full">
+      <div className="p-6 overflow-x-visible">
+        <table className="min-w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-[#CBD5E0]">
-              {["Nome", "Email", "Data Cadastro", "Valor Aportado", "Percentual Contrato", "Ações"].map((col) => (
+            <tr className="border-b border-[#CBD5E0] bg-[#F9FAFB]">
+              {["Nome", "Email", "Data Cadastro", "Última Alteração", "Valor Aportado", "Percentual Contrato", "Ações"].map((col) => (
                 <th
                   key={col}
-                  className="text-left py-3 px-4 font-medium text-[#1A2433]"
+                  className="text-left py-4 px-6 font-semibold text-[#1A2433] text-sm uppercase tracking-wide"
                 >
                   {col}
                 </th>
@@ -113,15 +114,25 @@ export default function ClientTable({
           <tbody>
             {clients
               .filter((c) => c.token !== "adm")
+              .sort((a, b) => {
+                if (sortBy === "nome") return a.name.localeCompare(b.name);
+                if (sortBy === "percentual") return (b.percentual_contrato || 0) - (a.percentual_contrato || 0);
+                if (sortBy === "data" || sortBy === "data_modificacao")
+                  return new Date(b.data_modificacao).getTime() - new Date(a.data_modificacao).getTime();
+                return 0;
+              })
               .map((client) => {
-                const isEditing = editingUser === client.user;
+                const isEditing = editingUser === client.id;
+                const formatDate = (dateStr: string) => {
+                  const d = new Date(dateStr);
+                  if (isNaN(d.getTime())) return "—";
+                  return d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+                };
+
                 return (
-                  <tr
-                    key={client.user}
-                    className="border-b border-[#F4F5F7] hover:bg-[#F4F5F7]"
-                  >
+                  <tr key={client.id} className="border-b border-[#E2E8F0] hover:bg-[#F8FAFC] transition">
                     {/* Nome */}
-                    <td className="py-3 px-4 text-[#1A2433]">
+                    <td className="py-4 px-6 text-[#1A2433] whitespace-nowrap">
                       {isEditing ? (
                         <input
                           type="text"
@@ -135,7 +146,7 @@ export default function ClientTable({
                     </td>
 
                     {/* Email */}
-                    <td className="py-3 px-4 text-[#4A5568]">
+                    <td className="py-4 px-6 text-[#4A5568] whitespace-nowrap">
                       {isEditing ? (
                         <input
                           type="email"
@@ -149,14 +160,19 @@ export default function ClientTable({
                     </td>
 
                     {/* Data Cadastro */}
-                    <td className="py-3 px-4 text-[#4A5568]">
+                    <td className="py-4 px-6 text-[#4A5568] whitespace-nowrap">
                       {client.data_cadastro
                         ? new Date(client.data_cadastro + "T00:00:00").toLocaleDateString("pt-BR")
                         : "—"}
                     </td>
 
+                    {/* Última Alteração */}
+                    <td className="py-4 px-6 text-[#4A5568] whitespace-nowrap">
+                      {client.data_modificacao ? formatDate(client.data_modificacao) : "—"}
+                    </td>
+
                     {/* Valor Aportado */}
-                    <td className="py-3 px-4 text-[#1A2433]">
+                    <td className="py-4 px-6 text-[#1A2433] whitespace-nowrap">
                       {isEditing ? (
                         <input
                           type="number"
@@ -179,7 +195,7 @@ export default function ClientTable({
                     </td>
 
                     {/* Percentual Contrato */}
-                    <td className="py-3 px-4 text-[#1A2433]">
+                    <td className="py-4 px-6 text-[#1A2433] whitespace-nowrap">
                       {isEditing ? (
                         <input
                           type="number"
@@ -195,73 +211,42 @@ export default function ClientTable({
                     </td>
 
                     {/* Ações */}
-                    <td className="py-3 px-4 flex items-center space-x-3">
+                    <td className="py-4 px-6 flex items-center space-x-4 whitespace-nowrap">
                       {isEditing ? (
                         <>
-                          <div className="relative group">
-                            <button
-                              onClick={handleSaveEdit}
-                              className="text-[#00A676] hover:text-[#00855C] transition-colors"
-                            >
-                              <Check className="w-5 h-5" />
-                            </button>
-                            <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition bg-[#00A676] text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                              Salvar
-                            </span>
-
-                          </div>
-                          <div className="relative group">
-                            <button
-                              onClick={handleCancelEdit}
-                              className="text-red-500 hover:text-red-600 transition-colors"
-                            >
-                              <X className="w-5 h-5" />
-                            </button>
-                            <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition bg-red-500 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                              Cancelar
-                            </span>
-                          </div>
+                          <button
+                            onClick={handleSaveEdit}
+                            className="text-[#00A676] hover:text-[#00855C] transition-colors"
+                          >
+                            <Check className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            className="text-red-500 hover:text-red-600 transition-colors"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
                         </>
                       ) : (
                         <>
-                          {/* Informar rendimento */}
-                          <div className="relative group">
-                            <button
-                              onClick={() => onSelectClient(client)}
-                              className="text-[#4A5568] hover:text-secondary transition-colors"
-                            >
-                              <ClipboardList className="w-5 h-5" />
-                            </button>
-                            <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition bg-secondary text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                              Informar rendimento
-                            </span>
-                          </div>
-
-                          {/* Editar */}
-                          <div className="relative group">
-                            <button
-                              onClick={() => handleEditClick(client)}
-                              className="text-[#4A5568] hover:text-[#00A676] transition-colors"
-                            >
-                              <Pencil className="w-5 h-5" />
-                            </button>
-                            <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition bg-[#00A676] text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                              Editar
-                            </span>
-                          </div>
-
-                          {/* Excluir */}
-                          <div className="relative group">
-                            <button
-                              onClick={() => handleDelete(client)}
-                              className="text-[#4A5568] hover:text-red-500 transition-colors"
-                            >
-                              <X className="w-5 h-5" />
-                            </button>
-                            <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition bg-red-500 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                              Excluir
-                            </span>
-                          </div>
+                          <button
+                            onClick={() => onSelectClient(client)}
+                            className="text-[#4A5568] hover:text-secondary transition-colors"
+                          >
+                            <ClipboardList className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleEditClick(client)}
+                            className="text-[#4A5568] hover:text-[#00A676] transition-colors"
+                          >
+                            <Pencil className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(client)}
+                            className="text-[#4A5568] hover:text-red-500 transition-colors"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
                         </>
                       )}
                     </td>
@@ -271,6 +256,7 @@ export default function ClientTable({
           </tbody>
         </table>
       </div>
+
     </div>
   );
 }

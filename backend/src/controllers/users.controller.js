@@ -23,11 +23,15 @@ exports.create = async (req, res) => {
 // PUT editar usuário
 exports.update = async (req, res) => {
   try {
-    const { user } = req.params;
-    const found = await User.findByPk(user);
+    const { id } = req.params;
+    const found = await User.findByPk(id);
     if (!found) return res.status(404).json({ error: "Usuário não encontrado" });
 
-    await found.update(req.body);
+    await found.update({
+      ...req.body,
+      data_modificacao: new Date(),
+    });
+    
     res.json({ success: true, user: found });
   } catch (err) {
     res.status(500).json({ error: "Erro ao editar usuário" });
@@ -37,8 +41,8 @@ exports.update = async (req, res) => {
 // DELETE
 exports.remove = async (req, res) => {
   try {
-    const { user } = req.params;
-    const found = await User.findByPk(user);
+    const { id } = req.params;
+    const found = await User.findByPk(id);
     if (!found) return res.status(404).json({ error: "Usuário não encontrado" });
 
     await found.destroy();
@@ -52,10 +56,29 @@ exports.remove = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { user, password } = req.body;
-    const found = await User.findOne({ where: { user, password } });
-    if (!found) return res.status(401).json({ error: "Usuário ou senha inválidos" });
-    res.json(found);
+
+    // busca pelo username
+    const found = await User.findOne({ where: { user } });
+    if (!found || found.password !== password) {
+      return res.status(401).json({ error: "Usuário ou senha inválidos" });
+    }
+
+    const token = found.token; 
+
+    res.json({
+      id: found.id,
+      user: found.user,
+      name: found.name,
+      cpf: found.cpf,
+      email: found.email,
+      data_cadastro: found.data_cadastro,
+      data_modificacao: found.data_modificacao,
+      valor_aportado: found.valor_aportado,
+      percentual_contrato: found.percentual_contrato,
+      token, // aqui é só uma string normal
+    });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Erro no login" });
   }
 };

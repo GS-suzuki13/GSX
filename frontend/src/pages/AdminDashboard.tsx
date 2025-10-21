@@ -9,13 +9,13 @@ import ClientTable from "../components/admin/ClientTable";
 import ClientAniversarioModal from "../components/admin/ClientAniversarioModal";
 
 interface AdminDashboardProps {
-  user?: User;
+  user: User; // usuário logado, passado pelo ProtectedRoute
   onLogout: () => void;
 }
 
 export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) {
   const [clients, setClients] = useState<User[]>([]);
-  const [sortBy, setSortBy] = useState<"nome" | "percentual" | "data">("nome");
+  const [sortBy, setSortBy] = useState<"nome" | "percentual" | "data" | "data_modificacao" >("nome");
   const [selectedClient, setSelectedClient] = useState<User | null>(null);
   const [showClientForm, setShowClientForm] = useState(false);
   const [clientesProximoRepasse, setClientesProximoRepasse] = useState<(User & { proximoRepasse: string })[]>([]);
@@ -29,11 +29,9 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
       const getNextBusinessDay = () => {
         const date = new Date();
         date.setDate(date.getDate() + 1);
-
         while (date.getDay() === 0 || date.getDay() === 6) {
           date.setDate(date.getDate() + 1);
         }
-
         return date;
       };
 
@@ -41,16 +39,9 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
       const proximoDiaUtilString = proximoDiaUtil.toLocaleDateString("pt-BR");
 
       const clientesComRepasseNoProximoDiaUtil = data
-        .filter((cliente) => {
-          if (!cliente.data_cadastro || cliente.token === "adm") return false;
-
-          const proximoRepasse = calculateNextRepasse(cliente.data_cadastro);
-          return proximoRepasse === proximoDiaUtilString;
-        })
-        .map((cliente) => ({
-          ...cliente,
-          proximoRepasse: proximoDiaUtilString,
-        }));
+        .filter((cliente) => cliente.data_cadastro && cliente.token !== "adm")
+        .filter((cliente) => calculateNextRepasse(cliente.data_cadastro) === proximoDiaUtilString)
+        .map((cliente) => ({ ...cliente, proximoRepasse: proximoDiaUtilString }));
 
       if (clientesComRepasseNoProximoDiaUtil.length > 0) {
         setClientesProximoRepasse(clientesComRepasseNoProximoDiaUtil);
@@ -68,38 +59,29 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
 
     cadastroDate.setFullYear(today.getFullYear(), today.getMonth(), cadastroDate.getDate());
 
-    if (cadastroDate <= today) {
-      cadastroDate.setMonth(cadastroDate.getMonth() + 1);
-    }
+    if (cadastroDate <= today) cadastroDate.setMonth(cadastroDate.getMonth() + 1);
 
-    return cadastroDate.toLocaleDateString('pt-BR');
+    return cadastroDate.toLocaleDateString("pt-BR");
   };
 
   const sortedClients = [...clients].sort((a, b) => {
     if (sortBy === "nome") return a.name.localeCompare(b.name);
-    if (sortBy === "percentual")
-      return (a.percentual_contrato || 0) - (b.percentual_contrato || 0);
-    if (sortBy === "data")
-      return (
-        new Date(a.data_cadastro).getTime() -
-        new Date(b.data_cadastro).getTime()
-      );
+    if (sortBy === "percentual") return (a.percentual_contrato || 0) - (b.percentual_contrato || 0);
+    if (sortBy === "data") return new Date(a.data_cadastro).getTime() - new Date(b.data_cadastro).getTime();
+    if (sortBy === "data_modificacao") return new Date(a.data_modificacao).getTime() - new Date(b.data_modificacao).getTime();
     return 0;
   });
 
   const handleClientUpdated = (updatedClient: User, action: "edit" | "delete") => {
     setClients((prevClients) => {
-      if (action === "delete") {
-        return prevClients.filter((c) => c.user !== updatedClient.user);
-      } else {
-        return prevClients.map((c) => (c.user === updatedClient.user ? updatedClient : c));
-      }
+      if (action === "delete") return prevClients.filter((c) => c.user !== updatedClient.user);
+      return prevClients.map((c) => (c.user === updatedClient.user ? updatedClient : c));
     });
   };
 
   return (
     <div className="min-h-screen bg-gray-100 font-[Inter,sans-serif]">
-      <Header title="Dashboard Administrador" onLogout={onLogout} />
+      <Header title={`Dashboard Administrador - ${user.name}`} onLogout={onLogout} />
       <main className="max-w-7xl mx-auto p-6">
         <h2 className="text-2xl font-semibold text-[#1A2433] mb-6">Visão Geral</h2>
 
@@ -111,30 +93,24 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
           onSortChange={setSortBy}
           onSelectClient={setSelectedClient}
           onRegisterClient={() => setShowClientForm(true)}
-          onClientUpdated={handleClientUpdated} // Passa a função para atualizar a tabela
+          onClientUpdated={handleClientUpdated}
         />
       </main>
 
       {selectedClient && (
-        <ClientDetailsModal
-          client={selectedClient}
-          onClose={() => setSelectedClient(null)}
-        />
+        <ClientDetailsModal client={selectedClient} onClose={() => setSelectedClient(null)} />
       )}
 
       {showAniversarioModal && clientesProximoRepasse.length > 0 && (
-        <ClientAniversarioModal
-          data={clientesProximoRepasse}
-          onClose={() => setShowAniversarioModal(false)}
-        />
+        <ClientAniversarioModal data={clientesProximoRepasse} onClose={() => setShowAniversarioModal(false)} />
       )}
 
       {showClientForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="max-w-2xl w-full">
             <ClientRegistrationForm
-              onClientRegistered={(user) => {
-                setClients((prev) => [...prev, user]);
+              onClientRegistered={(newUser) => {
+                setClients((prev) => [...prev, newUser]);
                 setShowClientForm(false);
               }}
             />

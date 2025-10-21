@@ -92,7 +92,7 @@ async function conversor(filePath, clientUser) {
           percentual,
           variacao,
           rendimento,
-          userId: user.user,
+          userId: user.id,
         };
 
         results.push(row);

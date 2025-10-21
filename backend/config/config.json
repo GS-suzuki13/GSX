@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "u538361014_gsx_adm",
+    "password": "301020@Gsxativos",
+    "database": "u538361014_gsx_db",
+    "host": "srv791.hstgr.io",
+    "dialect": "mysql"
+  },
+  "test": {
+    "username": "u538361014_gsx_adm",
+    "password": "301020@Gsxativos",
+    "database": "u538361014_gsx_db",
+    "host": "srv791.hstgr.io",
+    "dialect": "mysql"
+  },
+  "production": {
+    "username": "u538361014_gsx_adm",
+    "password": "301020@Gsxativos",
+    "database": "u538361014_gsx_db",
+    "host": "srv791.hstgr.io",
+    "dialect": "mysql"
+  }
+}

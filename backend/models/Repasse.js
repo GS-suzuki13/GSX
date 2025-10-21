@@ -13,7 +13,7 @@ const Repasse = sequelize.define("Repasse", {
     allowNull: false,
     references: {
       model: User,
-      key: "user",
+      key: "id",
     },
     onDelete: "CASCADE",
   },
