@@ -15,42 +15,42 @@ interface AdminDashboardProps {
 
 export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) {
   const [clients, setClients] = useState<User[]>([]);
-  const [sortBy, setSortBy] = useState<"nome" | "percentual" | "data" | "data_modificacao" >("nome");
+  const [sortBy, setSortBy] = useState<"nome" | "percentual" | "data" | "data_modificacao">("nome");
   const [selectedClient, setSelectedClient] = useState<User | null>(null);
   const [showClientForm, setShowClientForm] = useState(false);
   const [clientesProximoRepasse, setClientesProximoRepasse] = useState<(User & { proximoRepasse: string })[]>([]);
   const [showAniversarioModal, setShowAniversarioModal] = useState(false);
 
   useEffect(() => {
-    const fetchClients = async () => {
-      const data = await CSVHandler.getUsers();
-      setClients(data);
-
-      const getNextBusinessDay = () => {
-        const date = new Date();
-        date.setDate(date.getDate() + 1);
-        while (date.getDay() === 0 || date.getDay() === 6) {
-          date.setDate(date.getDate() + 1);
-        }
-        return date;
-      };
-
-      const proximoDiaUtil = getNextBusinessDay();
-      const proximoDiaUtilString = proximoDiaUtil.toLocaleDateString("pt-BR");
-
-      const clientesComRepasseNoProximoDiaUtil = data
-        .filter((cliente) => cliente.data_cadastro && cliente.token !== "adm")
-        .filter((cliente) => calculateNextRepasse(cliente.data_cadastro) === proximoDiaUtilString)
-        .map((cliente) => ({ ...cliente, proximoRepasse: proximoDiaUtilString }));
-
-      if (clientesComRepasseNoProximoDiaUtil.length > 0) {
-        setClientesProximoRepasse(clientesComRepasseNoProximoDiaUtil);
-        setShowAniversarioModal(true);
-      }
-    };
-
     fetchClients();
   }, []);
+
+  const fetchClients = async () => {
+    const data = await CSVHandler.getUsers();
+    setClients(data);
+
+    const getNextBusinessDay = () => {
+      const date = new Date();
+      date.setDate(date.getDate() + 1);
+      while (date.getDay() === 0 || date.getDay() === 6) {
+        date.setDate(date.getDate() + 1);
+      }
+      return date;
+    };
+
+    const proximoDiaUtil = getNextBusinessDay();
+    const proximoDiaUtilString = proximoDiaUtil.toLocaleDateString("pt-BR");
+
+    const clientesComRepasseNoProximoDiaUtil = data
+      .filter((cliente) => cliente.data_cadastro && cliente.token !== "adm")
+      .filter((cliente) => calculateNextRepasse(cliente.data_cadastro) === proximoDiaUtilString)
+      .map((cliente) => ({ ...cliente, proximoRepasse: proximoDiaUtilString }));
+
+    if (clientesComRepasseNoProximoDiaUtil.length > 0) {
+      setClientesProximoRepasse(clientesComRepasseNoProximoDiaUtil);
+      setShowAniversarioModal(true);
+    }
+  };
 
   const calculateNextRepasse = (dataCadastro: string): string => {
     const cadastroDate = new Date(dataCadastro);
@@ -98,7 +98,11 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
       </main>
 
       {selectedClient && (
-        <ClientDetailsModal client={selectedClient} onClose={() => setSelectedClient(null)} />
+        <ClientDetailsModal
+          client={selectedClient}
+          onClose={() => setSelectedClient(null)}
+          onUpdated={fetchClients} // 🔥 adiciona isso
+        />
       )}
 
       {showAniversarioModal && clientesProximoRepasse.length > 0 && (

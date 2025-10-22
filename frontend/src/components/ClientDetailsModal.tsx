@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, TrendingUp, Calendar, Paperclip, Pencil, Check } from 'lucide-react';
+import { X, Plus, TrendingUp, Calendar, Paperclip, Pencil, Check, DollarSign } from 'lucide-react';
 import { User, ClientReturn } from '../types';
 
 interface Repasse {
@@ -12,9 +12,10 @@ interface Repasse {
 interface ClientDetailsModalProps {
   client: User;
   onClose: () => void;
+  onUpdated: () => void;
 }
 
-export default function ClientDetailsModal({ client, onClose }: ClientDetailsModalProps) {
+export default function ClientDetailsModal({ client, onClose, onUpdated }: ClientDetailsModalProps) {
   const [returns, setReturns] = useState<ClientReturn[]>([]);
   const [showAddReturn, setShowAddReturn] = useState(false);
   const [returnForm, setReturnForm] = useState({ percentual: '' });
@@ -23,7 +24,7 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
   const [isImporting, setIsImporting] = useState(false);
 
   const [repasses, setRepasses] = useState<Repasse[]>([]);
-  const [selectedRepasseId, setSelectedRepasseId] = useState<number | null>(null);
+  const [selectedRepasseId, setSelectedRepasseId] = useState<number | null | 'all' | 'current'>('current');
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -32,13 +33,6 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
     const currentDate = new Date(date);
     currentDate.setDate(currentDate.getDate() + 1);
     return currentDate.toLocaleDateString('pt-BR');
-  };
-
-  const isWeekend = (date: Date) => date.getDay() === 0 || date.getDay() === 6;
-  const getNextBusinessDay = (date: Date) => {
-    const d = new Date(date);
-    while (isWeekend(d)) d.setDate(d.getDate() + 1);
-    return d;
   };
 
   const calculateNextRepasse = (dataCadastro: string, repasses: Repasse[]) => {
@@ -89,11 +83,8 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
 
       const repassesArray = Array.isArray(data.repasses) ? data.repasses : data;
       setRepasses(repassesArray);
+      setSelectedRepasseId(null);
 
-      if (repassesArray.length > 0) {
-        const last = repassesArray[repassesArray.length - 1];
-        setSelectedRepasseId(last.id);
-      }
     } catch (err) {
       console.error(err);
     }
@@ -109,9 +100,10 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
   // Filtra returns de acordo com repasse selecionado
   const filteredReturns = returns
     .filter(r => {
-      if (selectedRepasseId === null) return !r.repasseId; // Sem repasse
-      if (!selectedRepasseId) return true; // Todos
-      return r.repasseId === selectedRepasseId; // Repasse específico
+      if (selectedRepasseId === 'all') return true;
+      if (selectedRepasseId === 'current') return !r.repasseId;
+      if (selectedRepasseId === null) return !r.repasseId;
+      return r.repasseId === selectedRepasseId;
     })
     .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
 
@@ -144,15 +136,114 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
       setReturns([...returns, result.return]);
       setReturnForm({ percentual: '' });
       setShowAddReturn(false);
+      onUpdated();
     } catch (err) {
       console.error(err);
+      alert('Erro ao adicionar rendimento');
     }
   };
 
+  // Editar rendimento
+  const handleEditClick = (r: ClientReturn) => {
+    setEditingReturn(r);
+    setEditForm({
+      percentual: r.percentual.toString(),
+      variacao: r.variacao.toString(),
+      rendimento: r.rendimento.toString(),
+    });
+  };
+
+  const handleEditSave = async () => {
+    if (!editingReturn) return;
+
+    const updatedData = {
+      percentual: parseFloat(editForm.percentual),
+      variacao: parseFloat(editForm.variacao),
+      rendimento: parseFloat(editForm.rendimento),
+    };
+
+    try {
+      const response = await fetch(`${apiUrl}/returns/${client.id}/${editingReturn.data}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData),
+      });
+
+      if (!response.ok) throw new Error('Erro ao atualizar rendimento');
+      const result = await response.json();
+
+      setReturns(prev => prev.map(r =>
+        r.data === editingReturn.data ? result.return : r
+      ));
+
+      setEditingReturn(null);
+      onUpdated();
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao salvar edição');
+    }
+  };
+
+  // Excluir rendimento 
+  const handleDeleteReturn = async (r: ClientReturn) => {
+    const confirmDelete = await new Promise<boolean>((resolve) => {
+      const confirmed = window.confirm("Deseja excluir este rendimento?");
+      resolve(confirmed);
+    });
+    if (!confirmDelete) return;
+
+    try {
+      const response = await fetch(`${apiUrl}/returns/${client.id}/${r.data}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Erro ao excluir rendimento');
+
+      setReturns(prev => prev.filter(ret => ret.data !== r.data));
+      onUpdated();
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao excluir rendimento.');
+    }
+  };
+
+  // Importar CSV
+  const handleImportHistory = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length) return;
+
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+    setIsImporting(true);
+
+    try {
+      const response = await fetch(`${apiUrl}/returns/import/${client.id}`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Erro ao importar histórico');
+
+      await loadClientReturns();
+      onUpdated();
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao importar histórico');
+    } finally {
+      setIsImporting(false);
+      e.target.value = '';
+    }
+  };
+
+  // Fechar repasse
   const handleCloseRepasse = async () => {
     try {
-      const response = await fetch(`${apiUrl}/repasse/close/${client.id}`, { method: 'POST' });
+      const response = await fetch(`${apiUrl}/repasse/close/${client.id}`, {
+        method: 'POST',
+      });
+
       if (!response.ok) throw new Error('Erro ao fechar repasse');
+
       const newRepasse = await response.json();
 
       setRepasses(prev => [...prev, newRepasse]);
@@ -165,12 +256,22 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
         }
         return r;
       });
+
       setReturns(updatedReturns);
+      onUpdated();
     } catch (err) {
       console.error(err);
+      alert('Erro ao fechar repasse');
     }
   };
 
+  // Função auxiliar de formatação de data
+  const formatDate = (dateStr: string) => {
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
+  };
+
+  // Verifica se é dia de repasse
   const isRepasseToday = (clientDataCadastro: string, repasses: Repasse[]): boolean => {
     const today = new Date();
     const lastRepasseEnd = repasses.length
@@ -188,79 +289,12 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
     return today.toDateString() === nextRepasse.toDateString();
   };
 
-  // Editar rendimento
-  const handleEditClick = (r: ClientReturn) => {
-    setEditingReturn(r);
-    setEditForm({
-      percentual: r.percentual.toString(),
-      variacao: r.variacao.toString(),
-      rendimento: r.rendimento.toString(),
-    });
-  };
-
-  const handleEditSave = async () => {
-    if (!editingReturn) return;
-    const updatedData = {
-      percentual: parseFloat(editForm.percentual),
-      variacao: parseFloat(editForm.variacao),
-      rendimento: parseFloat(editForm.rendimento),
-    };
-    try {
-      const response = await fetch(`${apiUrl}/returns/${client.id}/${editingReturn.data}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedData),
-      });
-      if (!response.ok) throw new Error('Erro ao atualizar rendimento');
-      const result = await response.json();
-      setReturns(prev => prev.map(r => r.data === editingReturn.data ? result.return : r));
-      setEditingReturn(null);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Excluir rendimento
-  const handleDeleteReturn = async (r: ClientReturn) => {
-    try {
-      const response = await fetch(`${apiUrl}/returns/${client.id}/${r.data}`, { method: 'DELETE' });
-      if (!response.ok) throw new Error('Erro ao excluir rendimento');
-      setReturns(prev => prev.filter(ret => ret.data !== r.data));
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const formatDate = (dateStr: string) => {
-    const [year, month, day] = dateStr.split('-');
-    return `${day}/${month}/${year}`;
-  };
-
-  // Importar CSV
-  const handleImportHistory = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.length) return;
-    const file = e.target.files[0];
-    const formData = new FormData();
-    formData.append('file', file);
-    setIsImporting(true);
-    try {
-      const response = await fetch(`${apiUrl}/returns/import/${client.id}`, { method: 'POST', body: formData });
-      if (!response.ok) throw new Error('Erro ao importar histórico');
-      await loadClientReturns();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsImporting(false);
-      e.target.value = '';
-    }
-  };
 
   const totalReturn = filteredReturns.reduce((sum, r) => sum + r.rendimento, 0);
 
-  // JSX
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b flex items-center justify-between">
           <div>
@@ -272,15 +306,12 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
           </button>
         </div>
 
-        {/* Conteúdo */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
-          {/* Cards aprimorados */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {/* Valor Aportado */}
             <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-blue-700">Valor Aportado</p>
-                <TrendingUp className="w-6 h-6 text-blue-600" />
+                <DollarSign className="w-6 h-6 text-blue-600" />
               </div>
               <p className="text-2xl font-bold text-blue-700 mt-2">
                 R$ {client.valor_aportado.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -301,7 +332,7 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
             {/* Rendimento Líquido */}
             <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-emerald-700">Líquido</p>
+                <p className="text-sm font-semibold text-emerald-700">Rendimento Líquido</p>
                 <TrendingUp className="w-6 h-6 text-emerald-600" />
               </div>
               <p className="text-2xl font-bold text-emerald-700 mt-2">
@@ -328,17 +359,24 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
 
               <div className="flex items-center gap-2">
                 <select
-                  value={selectedRepasseId ?? ''}
+                  value={
+                    selectedRepasseId === 'current' ? 'current'
+                      : selectedRepasseId === 'all' ? 'all'
+                        : selectedRepasseId === null ? 'current'
+                          : String(selectedRepasseId)
+                  }
                   onChange={e => {
-                    const value = e.target.value;
-                    setSelectedRepasseId(value === 'none' ? null : Number(value));
+                    const v = e.target.value;
+                    if (v === 'all') setSelectedRepasseId('all');
+                    else if (v === 'current') setSelectedRepasseId('current');
+                    else setSelectedRepasseId(Number(v));
                   }}
                   className="px-3 py-2 border rounded-md text-sm"
                 >
-                  <option value="">Todos os rendimentos</option>
-                  <option value="none">Sem Repasse</option>
+                  <option value="all">Todos os rendimentos</option>
+                  <option value="current">Rendimento Atual</option>
                   {repasses.map(rep => (
-                    <option key={rep.id} value={rep.id}>
+                    <option key={rep.id} value={String(rep.id)}>
                       {rep.label} ({formatDate(rep.start)} - {formatDate(rep.end)})
                     </option>
                   ))}
@@ -347,9 +385,11 @@ export default function ClientDetailsModal({ client, onClose }: ClientDetailsMod
                 <button
                   onClick={handleCloseRepasse}
                   disabled={!isRepasseToday(client.data_cadastro, repasses)}
-                  className={`w-auto min-w-[120px] px-3 py-2 text-white text-sm font-medium rounded-md transition-colors ${
-                    isRepasseToday(client.data_cadastro, repasses) ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
-                  }`}
+                  className={`w-auto min-w-[120px] px-3 py-2 text-white text-sm font-medium rounded-md transition-colors ${isRepasseToday(client.data_cadastro, repasses) ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
+                    }`}
+                  style={{
+                    display: isRepasseToday(client.data_cadastro, repasses) ? 'inline-block' : 'none'
+                  }}
                 >
                   Criar Repasse
                 </button>
