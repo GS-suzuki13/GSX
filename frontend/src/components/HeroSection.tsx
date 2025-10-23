@@ -76,7 +76,7 @@ const HeroSection: React.FC = () => {
           <div className="flex flex-col items-start text-secondary text-sm">
             <div className="flex items-center mb-4">
               <MapPin className="w-5 h-5 mr-2" />
-              <span>Rua Heinruch Hemmer, 1900 - Blumenau, SC</span>
+              <span>Rua XV de Novembro, 727, 2º andar, Centro, Blumenau/SC</span>
             </div>
             <div className="flex items-center">
               <FileText className="w-5 h-5 mr-2" />

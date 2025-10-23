@@ -17,6 +17,7 @@ interface ClientDetailsModalProps {
 
 export default function ClientDetailsModal({ client, onClose, onUpdated }: ClientDetailsModalProps) {
   const [returns, setReturns] = useState<ClientReturn[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
   const [showAddReturn, setShowAddReturn] = useState(false);
   const [returnForm, setReturnForm] = useState({ percentual: '' });
   const [editingReturn, setEditingReturn] = useState<ClientReturn | null>(null);
@@ -110,6 +111,9 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
   // Adicionar rendimento
   const handleAddReturn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return; // Evita múltiplos cliques
+
+    setIsSaving(true); // bloqueia novos envios
 
     const percentualTotal = parseFloat(returnForm.percentual);
     const percentual = (percentualTotal / 100) * (client.percentual_contrato / 100);
@@ -132,6 +136,7 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
         body: JSON.stringify(newReturn),
       });
       if (!response.ok) throw new Error('Erro ao salvar rendimento');
+
       const result = await response.json();
       setReturns([...returns, result.return]);
       setReturnForm({ percentual: '' });
@@ -140,6 +145,8 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
     } catch (err) {
       console.error(err);
       alert('Erro ao adicionar rendimento');
+    } finally {
+      setIsSaving(false); // libera o botão novamente
     }
   };
 
@@ -424,9 +431,11 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
                   />
                   <button
                     type="submit"
-                    className="w-auto min-w-[100px] px-3 py-2 bg-green-500 text-white text-sm rounded-md hover:bg-green-600 transition-colors"
+                    disabled={isSaving}
+                    className={`w-auto min-w-[100px] px-3 py-2 text-white text-sm rounded-md transition-colors 
+                      ${isSaving ? 'bg-green-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'}`}
                   >
-                    Salvar
+                    {isSaving ? 'Salvando...' : 'Salvar'}
                   </button>
                   <button
                     type="button"
