@@ -69,8 +69,8 @@ export default function ClientTable({ clients, sortBy, onSortChange, onSelectCli
             className="border border-[#CBD5E0] rounded-lg px-2 sm:px-3 py-2 text-sm text-[#1A2433]"
           >
             <option value="nome">Nome (A-Z)</option>
-            <option value="percentual">Percentual Contrato</option>
-            <option value="data">Data Cadastro</option>
+            <option value="percentual">Contrato</option>
+            <option value="data">Cadastro</option>
             <option value="data_modificacao">Última Alteração</option>
           </select>
         </div>
@@ -88,7 +88,7 @@ export default function ClientTable({ clients, sortBy, onSortChange, onSelectCli
         <table className="min-w-[800px] w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-[#CBD5E0] bg-[#F9FAFB]">
-              {["Nome", "Email", "Data Cadastro", "Última Alteração", "Valor Aportado", "Percentual Contrato", "Ações"].map((col) => (
+              {["Nome", "Email", "Cadastro", "Última Alteração", "Valor Aportado", "Contrato", "Ações"].map((col) => (
                 <th key={col} className="text-left py-4 px-3 sm:px-6 font-semibold text-[#1A2433] text-xs sm:text-sm uppercase tracking-wide whitespace-nowrap">
                   {col}
                 </th>
