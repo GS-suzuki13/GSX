@@ -9,7 +9,7 @@ import ClientTable from "../components/admin/ClientTable";
 import ClientAniversarioModal from "../components/admin/ClientAniversarioModal";
 
 interface AdminDashboardProps {
-  user: User; // usuário logado, passado pelo ProtectedRoute
+  user: User;
   onLogout: () => void;
 }
 
@@ -82,26 +82,31 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
   return (
     <div className="min-h-screen bg-gray-100 font-[Inter,sans-serif]">
       <Header title={`Dashboard Administrador - ${user.name}`} onLogout={onLogout} />
-      <main className="max-w-7xl mx-auto p-6">
-        <h2 className="text-2xl font-semibold text-[#1A2433] mb-6">Visão Geral</h2>
 
-        <AdminOverviewCards clients={clients} />
+      <main className="max-w-7xl mx-auto p-4 sm:p-6">
+        <h2 className="text-xl sm:text-2xl font-semibold text-[#1A2433] mb-4 sm:mb-6">Visão Geral</h2>
 
-        <ClientTable
-          clients={sortedClients}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          onSelectClient={setSelectedClient}
-          onRegisterClient={() => setShowClientForm(true)}
-          onClientUpdated={handleClientUpdated}
-        />
+        <div className="w-full overflow-x-auto">
+          <AdminOverviewCards clients={clients} />
+        </div>
+
+        <div className="mt-6 w-full overflow-x-auto">
+          <ClientTable
+            clients={sortedClients}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            onSelectClient={setSelectedClient}
+            onRegisterClient={() => setShowClientForm(true)}
+            onClientUpdated={handleClientUpdated}
+          />
+        </div>
       </main>
 
       {selectedClient && (
         <ClientDetailsModal
           client={selectedClient}
           onClose={() => setSelectedClient(null)}
-          onUpdated={fetchClients} // 🔥 adiciona isso
+          onUpdated={fetchClients}
         />
       )}
 
@@ -110,7 +115,7 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
       )}
 
       {showClientForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-3">
           <div className="max-w-2xl w-full">
             <ClientRegistrationForm
               onClientRegistered={(newUser) => {

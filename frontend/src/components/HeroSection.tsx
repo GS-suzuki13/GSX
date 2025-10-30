@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, Shield, Users, MapPin, Phone, FileText } from 'lucide-react';
+import { TrendingUp, Shield, Users, MapPin, FileText } from 'lucide-react';
 import b3Logo from '../assets/b3-certifica.svg';
 import cmlogo from '../assets/cm-capital.svg';
 
@@ -7,79 +7,69 @@ const HeroSection: React.FC = () => {
   return (
     <section
       id="inicio"
-      className="min-h-screen flex items-center justify-center"
-      style={{
-        background: 'linear-gradient(135deg, #1A2433 0%, #142737 100%)', // Gradiente de fundo
-        padding: '0 20px',
-      }}
+      className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1A2433] to-[#142737] px-6 py-20 text-white"
     >
-      <div className="container mx-auto text-center">
+      <div className="w-full max-w-6xl text-center">
+        {/* Cabeçalho */}
         <div className="mb-16">
-          <h1
-            className="text-secondary"
-            style={{
-              fontSize: '56px',
-              fontWeight: '700',
-              marginBottom: '20px',
-            }}
-          >
-            GSX - Gestão de Ativos
+          <h1 className="text-4xl md:text-6xl font-bold text-secondary mb-6">
+            Bem-vindo à GSX – Gestão de Ativos
           </h1>
-          <p
-            className="text-white/80"
-            style={{
-              fontSize: '20px',
-              marginBottom: '40px',
-              maxWidth: '800px',
-              margin: '0 auto',
-            }}
-          >
-            Plataforma moderna, confiável e intuitiva para gestão de ativos e operações financeiras.
+          <p className="text-white/80 text-base md:text-lg leading-relaxed max-w-3xl mx-auto">
+            Aqui, você encontra um ambiente digital criado para facilitar o acompanhamento dos seus investimentos. 
+            Nosso portal oferece um dashboard moderno, intuitivo e transparente — para que você tenha total clareza 
+            sobre seus rendimentos e a tranquilidade de saber exatamente como seu patrimônio está evoluindo.
+          </p>
+          <p className="text-white/70 text-base md:text-lg leading-relaxed max-w-3xl mx-auto mt-6">
+            Na GSX, acreditamos que transparência gera confiança, e é com esse propósito que desenvolvemos 
+            cada detalhe da sua experiência conosco.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-8 text-center hover:bg-white/20 transition-all duration-300">
+        {/* Cards de destaque */}
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-16">
+          <div className="bg-white/10 hover:bg-white/15 backdrop-blur-sm rounded-2xl p-8 transition-all duration-300 shadow-lg">
             <TrendingUp className="w-12 h-12 text-secondary mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-4 text-white">Estratégias Personalizadas</h3>
-            <p className="text-white/80">
-              Desenvolvemos estratégias únicas baseadas no seu perfil de risco e objetivos financeiros.
+            <h3 className="text-lg font-semibold mb-3 text-white">Dashboard Inteligente</h3>
+            <p className="text-white/80 text-sm">
+              Acompanhe o desempenho do seu portfólio em tempo real com gráficos e relatórios interativos.
             </p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-8 text-center hover:bg-white/20 transition-all duration-300">
+          <div className="bg-white/10 hover:bg-white/15 backdrop-blur-sm rounded-2xl p-8 transition-all duration-300 shadow-lg">
             <Shield className="w-12 h-12 text-secondary mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-4 text-white">Transparência Total</h3>
-            <p className="text-white/80">
-              Relatórios detalhados e acesso completo às informações dos seus investimentos.
+            <h3 className="text-lg font-semibold mb-3 text-white">Segurança e Transparência</h3>
+            <p className="text-white/80 text-sm">
+              Suas informações são protegidas e você tem total acesso a todos os detalhes dos seus investimentos.
             </p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-8 text-center hover:bg-white/20 transition-all duration-300">
+          <div className="bg-white/10 hover:bg-white/15 backdrop-blur-sm rounded-2xl p-8 transition-all duration-300 shadow-lg">
             <Users className="w-12 h-12 text-secondary mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-4 text-white">Suporte Especializado</h3>
-            <p className="text-white/80">
-              Equipe de especialistas disponível para orientá-lo em suas decisões de investimento.
+            <h3 className="text-lg font-semibold mb-3 text-white">Suporte Personalizado</h3>
+            <p className="text-white/80 text-sm">
+              Nossa equipe está disponível para oferecer orientação especializada sempre que você precisar.
             </p>
           </div>
         </div>
 
-        <hr className="my-16 border-t-2 border-white" />
+        {/* Linha divisória */}
+        <hr className="border-white/20 mb-10" />
 
-        {/* Aumento da margem superior para ficar mais próximo da linha de separação */}
-        <div className="mt-12 flex justify-between gap-8"> {/* Aumento de margem superior aqui */}
-          <div className="flex items-center">
-            <img src={b3Logo} alt="Certificado B3" className="w-16 h-16 mr-2" />
-            <img src={cmlogo} alt="Certificado CM" className="w-16 h-16 mr-2" />
+        {/* Rodapé com certificações e informações */}
+        <div className="flex flex-col md:flex-row justify-between items-center gap-8 text-sm text-white/70">
+          <div className="flex items-center justify-center gap-4">
+            <img src={b3Logo} alt="Certificação B3" className="w-16 h-16" />
+            <img src={cmlogo} alt="CM Capital" className="w-16 h-16" />
           </div>
 
-          <div className="flex flex-col items-start text-secondary text-sm">
-            <div className="flex items-center mb-4">
-              <MapPin className="w-5 h-5 mr-2" />
+          <div className="flex flex-col items-center md:items-end gap-2">
+            <div className="flex items-center">
+              <MapPin className="w-5 h-5 mr-2 text-secondary" />
               <span>Rua XV de Novembro, 727, 2º andar, Centro, Blumenau/SC</span>
             </div>
             <div className="flex items-center">
-              <FileText className="w-5 h-5 mr-2" />
+              <FileText className="w-5 h-5 mr-2 text-secondary" />
               <span>CNPJ: 57.488.705/0001-17</span>
             </div>
           </div>
