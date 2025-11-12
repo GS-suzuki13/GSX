@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { DollarSign, TrendingUp, Calendar } from 'lucide-react';
 import { User } from '../types';
 import Header from '../components/layout/Header';
-import DashboardCard from '../components/DashboardCard';
 import PerformanceChart from '../components/PerformanceChart';
 import ReturnsTable from '../components/ReturnsTable';
 
@@ -22,42 +21,44 @@ export default function ClientDashboard({ user, onLogout }: ClientDashboardProps
   const [fullName, setFullName] = useState<string | null>(null);
   const [repasses, setRepasses] = useState<Repasse[]>([]);
   const [returns, setReturns] = useState<any[]>([]);
-  const [selectedRepasseId, setSelectedRepasseId] = useState<number | null | 'all' | 'current'>('current');
+  const [selectedRepasseId, setSelectedRepasseId] = useState<number | "all" | "current" | null>("current");
   const [isLoading, setIsLoading] = useState(true);
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
-  useEffect(() => setFullName(user?.name ?? null), [user]);
+  useEffect(() => setFullName(user?.name || null), [user]);
 
   const loadRepasses = async () => {
     try {
       const res = await fetch(`${apiUrl}/repasse/${user.id}`);
-      if (!res.ok) throw new Error('Erro ao carregar repasses');
+      if (!res.ok) throw new Error("Erro ao carregar repasses");
+
       const data = await res.json();
-      const repArray: Repasse[] = Array.isArray(data.repasses) ? data.repasses : data;
+      const repArray = Array.isArray(data.repasses) ? data.repasses : data;
       setRepasses(repArray);
-      if (repArray.length > 0) setSelectedRepasseId(repArray[repArray.length - 1].id);
-      else setSelectedRepasseId(null);
-    } catch (err) {
-      console.error(err);
+      setSelectedRepasseId(repArray.length ? repArray.at(-1)!.id : null);
+    } catch (error) {
+      console.error(error);
     }
   };
 
   const loadReturns = async () => {
     try {
       const res = await fetch(`${apiUrl}/returns/${user.id}`);
-      if (!res.ok) throw new Error('Erro ao carregar rendimentos');
+      if (!res.ok) throw new Error("Erro ao carregar rendimentos");
+
       const data = await res.json();
-      const parsed = data.map((r: any) => ({
-        data: r.data,
-        percentual: parseFloat(r.percentual),
-        rendimento: parseFloat(r.rendimento),
-        repasseId: r.repasseId,
-        userId: r.userId,
-      }));
-      setReturns(parsed);
-    } catch (err) {
-      console.error(err);
+      setReturns(
+        data.map((r: any) => ({
+          data: r.data,
+          percentual: +r.percentual,
+          rendimento: +r.rendimento,
+          repasseId: r.repasseId,
+          userId: r.userId,
+        }))
+      );
+    } catch (error) {
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -69,36 +70,32 @@ export default function ClientDashboard({ user, onLogout }: ClientDashboardProps
   }, [user]);
 
   const filteredReturns = returns
-    .filter(r => {
-      if (selectedRepasseId === 'all') return true;
-      if (selectedRepasseId === 'current') return !r.repasseId;
-      if (selectedRepasseId === null) return !r.repasseId;
+    .filter((r) => {
+      if (selectedRepasseId === "all") return true;
+      if (selectedRepasseId === "current" || selectedRepasseId === null) return !r.repasseId;
       return r.repasseId === selectedRepasseId;
     })
     .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
 
-  const filteredTotal = filteredReturns.reduce((acc, r) => acc + (r.rendimento ?? 0), 0);
-  const filteredLast = filteredReturns.length > 0 ? filteredReturns[filteredReturns.length - 1] : null;
+  const filteredTotal = filteredReturns.reduce((sum, r) => sum + (r.rendimento ?? 0), 0);
 
   const formatDate = (dateStr: string) => {
-    if (!dateStr) return '';
-    const [year, month, day] = dateStr.split('-');
-    return `${day}/${month}/${year}`;
+    if (!dateStr) return "";
+    const [y, m, d] = dateStr.split("-");
+    return `${d}/${m}/${y}`;
   };
 
-  const calculateNextRepasse = (dataCadastro: string, repasses: Repasse[]) => {
-    const lastRepasseEnd = repasses.length
-      ? new Date(repasses[repasses.length - 1].end)
-      : new Date(dataCadastro);
+  const calculateNextRepasse = (dataCadastro: string, list: Repasse[]) => {
+    const lastDate = list.length ? new Date(list.at(-1)!.end) : new Date(dataCadastro);
+    const result = new Date(lastDate);
 
-    let result = new Date(lastRepasseEnd);
-    let addedDays = 0;
-    while (addedDays < 30) {
+    let days = 0;
+    while (days < 30) {
       result.setDate(result.getDate() + 1);
-      const day = result.getDay();
-      if (day !== 0 && day !== 6) addedDays++;
+      if (![0, 6].includes(result.getDay())) days++;
     }
-    return result.toLocaleDateString('pt-BR');
+
+    return result.toLocaleDateString("pt-BR");
   };
 
   const chartData = filteredReturns.map((r) => ({
@@ -106,36 +103,33 @@ export default function ClientDashboard({ user, onLogout }: ClientDashboardProps
     value: r.rendimento,
   }));
 
+  const formatMoney = (value: number) =>
+    `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
   const dashboardCards = [
     {
-      title: 'Valor Aportado',
-      value: `R$ ${(user.valor_aportado ?? 0).toLocaleString('pt-BR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      })}`,
+      title: "Valor Aportado",
+      value: formatMoney(user.valor_aportado || 0),
       icon: <DollarSign className="w-6 h-6 text-blue-600" />,
-      bg: 'bg-blue-50 border border-blue-100 text-blue-700',
+      bg: "bg-blue-50 border border-blue-100 text-blue-700",
     },
     {
-      title: 'Rendimento Bruto',
-      value: `R$ ${filteredTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      title: "Rendimento Bruto",
+      value: formatMoney(filteredTotal),
       icon: <TrendingUp className="w-6 h-6 text-green-600" />,
-      bg: 'bg-green-50 border border-green-100 text-green-700',
+      bg: "bg-green-50 border border-green-100 text-green-700",
     },
     {
-      title: 'Rendimento Líquido',
-      value: `R$ ${(filteredTotal * 0.7).toLocaleString('pt-BR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      })}`,
+      title: "Rendimento Líquido",
+      value: formatMoney(filteredTotal * 0.7),
       icon: <TrendingUp className="w-6 h-6 text-emerald-600" />,
-      bg: 'bg-emerald-50 border border-emerald-100 text-emerald-700',
+      bg: "bg-emerald-50 border border-emerald-100 text-emerald-700",
     },
     {
-      title: 'Próximo Repasse',
+      title: "Próximo Repasse",
       value: calculateNextRepasse(user.data_cadastro, repasses),
       icon: <Calendar className="w-6 h-6 text-gray-600" />,
-      bg: 'bg-gray-50 border border-gray-200 text-gray-800',
+      bg: "bg-gray-50 border border-gray-200 text-gray-800",
     },
   ];
 

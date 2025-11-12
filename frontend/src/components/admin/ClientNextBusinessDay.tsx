@@ -1,12 +1,12 @@
 import React from "react";
 import { User } from "../../types";
 
-interface ClientAniversarioModalProps {
+interface ClientNextBusinessDayProps {
   data: (User & { proximoRepasse: string })[];
   onClose: () => void;
 }
 
-export default function ClientAniversarioModal({ data, onClose }: ClientAniversarioModalProps) {
+export default function ClientNextBusinessDay({ data, onClose }: ClientNextBusinessDayProps) {
   const hasWeekend = data.some((c) => {
     const [year, month, day] = c.proximoRepasse.split("-").map(Number);
     const date = new Date(year, month - 1, day);

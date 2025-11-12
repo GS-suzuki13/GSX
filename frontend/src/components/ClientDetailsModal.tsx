@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, TrendingUp, Calendar, Paperclip, Pencil, Check, DollarSign } from 'lucide-react';
 import { User, ClientReturn } from '../types';
+import { calculateNextRepasseBusinessDays } from "../utils/calculateNextRepasse";
 
 interface Repasse {
   id: number;
@@ -17,12 +18,13 @@ interface ClientDetailsModalProps {
 
 export default function ClientDetailsModal({ client, onClose, onUpdated }: ClientDetailsModalProps) {
   const [returns, setReturns] = useState<ClientReturn[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
   const [showAddReturn, setShowAddReturn] = useState(false);
   const [returnForm, setReturnForm] = useState({ percentual: '' });
   const [editingReturn, setEditingReturn] = useState<ClientReturn | null>(null);
-  const [editForm, setEditForm] = useState({ percentual: '', variacao: '', rendimento: '' });
+  const [editForm, setEditForm] = useState({ percentual: '', variacao: '', rendimento: '', data: '' });
+  const [isCreate, setIsCreate] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [repasses, setRepasses] = useState<Repasse[]>([]);
   const [selectedRepasseId, setSelectedRepasseId] = useState<number | null | 'all' | 'current'>('current');
@@ -35,25 +37,6 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
     return currentDate.toLocaleDateString('pt-BR');
   };
 
-  const calculateNextRepasse = (dataCadastro: string, repasses: Repasse[]) => {
-    const lastRepasseEnd = repasses.length
-      ? new Date(repasses[repasses.length - 1].end)
-      : new Date(dataCadastro);
-
-    const addBusinessDays = (startDate: Date, diasUteis: number) => {
-      const result = new Date(startDate);
-      let addedDays = 0;
-      while (addedDays < diasUteis) {
-        result.setDate(result.getDate() + 1);
-        const day = result.getDay();
-        if (day !== 0 && day !== 6) addedDays++;
-      }
-      return result;
-    };
-
-    const nextRepasseDate = addBusinessDays(lastRepasseEnd, 30);
-    return nextRepasseDate.toLocaleDateString('pt-BR');
-  };
 
   const loadClientReturns = async () => {
     try {
@@ -144,11 +127,16 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
   };
 
   const handleEditClick = (r: ClientReturn) => {
-    setEditingReturn(r);
+    const normalizedDate = r.data.includes("/")
+      ? r.data.split("/").reverse().join("-")
+      : r.data;
+
+    setEditingReturn({ ...r, data: normalizedDate });
     setEditForm({
       percentual: r.percentual.toString(),
       variacao: r.variacao.toString(),
       rendimento: r.rendimento.toString(),
+      data: r.data
     });
   };
 
@@ -159,6 +147,7 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
       percentual: parseFloat(editForm.percentual),
       variacao: parseFloat(editForm.variacao),
       rendimento: parseFloat(editForm.rendimento),
+      data: editForm.data
     };
 
     try {
@@ -171,9 +160,9 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
       if (!response.ok) throw new Error('Erro ao atualizar rendimento');
       const result = await response.json();
 
-      setReturns(prev => prev.map(r =>
-        r.data === editingReturn.data ? result.return : r
-      ));
+    setReturns(prev => prev.map(r =>
+      r.data === editingReturn.data ? { ...result.return, data: editForm.data } : r
+    ));
 
       setEditingReturn(null);
       onUpdated();
@@ -230,19 +219,24 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
   };
 
   const handleCloseRepasse = async () => {
+    const confirmClose = window.confirm("Deseja criar repasse?");
+    if (!confirmClose) return;
+
+    setIsCreate(true);
+
     try {
       const response = await fetch(`${apiUrl}/repasse/close/${client.id}`, {
-        method: 'POST',
+        method: "POST",
       });
 
-      if (!response.ok) throw new Error('Erro ao fechar repasse');
+      if (!response.ok) throw new Error("Erro ao fechar repasse");
 
       const newRepasse = await response.json();
 
-      setRepasses(prev => [...prev, newRepasse]);
+      setRepasses((prev) => [...prev, newRepasse]);
       setSelectedRepasseId(newRepasse.id);
 
-      const updatedReturns = returns.map(r => {
+      const updatedReturns = returns.map((r) => {
         const rDate = new Date(r.data);
         if (!r.repasseId && rDate <= new Date(newRepasse.end)) {
           return { ...r, repasseId: newRepasse.id };
@@ -252,9 +246,38 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
 
       setReturns(updatedReturns);
       onUpdated();
+
+      const addToAportado = window.confirm(
+        "Adicionar rendimento ao valor aportado?"
+      );
+
+      if (addToAportado) {
+        const totalRendimento = updatedReturns
+          .filter((r) => r.repasseId === newRepasse.id)
+          .reduce((sum, r) => sum + (r.rendimento ?? 0), 0);
+
+        const novoValorAportado =
+          (client.valor_aportado ?? 0) + (totalRendimento * 0.7);
+
+        const updateUser = await fetch(`${apiUrl}/users/${client.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ valor_aportado: novoValorAportado }),
+        });
+
+        if (!updateUser.ok)
+          throw new Error("Erro ao atualizar valor aportado");
+
+        client.valor_aportado = novoValorAportado;
+        onUpdated();
+        
+      }
+
     } catch (err) {
       console.error(err);
-      alert('Erro ao fechar repasse');
+      alert("Erro ao fechar repasse");
+    } finally {
+      setIsCreate(false);
     }
   };
 
@@ -263,30 +286,12 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
     return `${day}/${month}/${year}`;
   };
 
-  const isRepasseToday = (clientDataCadastro: string, repasses: Repasse[]): boolean => {
-    const today = new Date();
-    const lastRepasseEnd = repasses.length
-      ? new Date(repasses[repasses.length - 1].end)
-      : new Date(clientDataCadastro);
-
-    const nextRepasse = new Date(lastRepasseEnd);
-    let addedDays = 0;
-    while (addedDays < 30) {
-      nextRepasse.setDate(nextRepasse.getDate() + 1);
-      const day = nextRepasse.getDay();
-      if (day !== 0 && day !== 6) addedDays++;
-    }
-
-    return today.toDateString() === nextRepasse.toDateString();
-  };
-
   const totalReturn = filteredReturns.reduce((sum, r) => sum + r.rendimento, 0);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
 
-        {/* Header */}
         <div className="px-4 sm:px-6 py-3 border-b flex items-center justify-between flex-wrap gap-2">
           <div>
             <h2 className="text-base sm:text-xl font-bold">{client.name}</h2>
@@ -299,7 +304,6 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
 
         <div className="p-3 sm:p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
 
-          {/* Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5 sm:mb-6">
 
             <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
@@ -308,7 +312,7 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
                 <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
               </div>
               <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2">
-                R$ {client.valor_aportado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                R$ {client.valor_aportado.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
 
@@ -318,7 +322,7 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
                 <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
               </div>
               <p className="text-lg sm:text-2xl font-bold text-green-700 mt-2">
-                R$ {totalReturn.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                R$ {totalReturn.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
 
@@ -328,7 +332,7 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
                 <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
               </div>
               <p className="text-lg sm:text-2xl font-bold text-emerald-700 mt-2">
-                R$ {(totalReturn * 0.7).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                R$ {(totalReturn * 0.7).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
 
@@ -338,13 +342,12 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
                 <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
               </div>
               <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-2">
-                {calculateNextRepasse(client.data_cadastro, repasses)}
+                {calculateNextRepasseBusinessDays(client.data_cadastro, repasses)}
               </p>
             </div>
 
           </div>
 
-          {/* Histórico */}
           <div className="bg-white border rounded-lg">
 
             <div className="px-3 sm:px-4 py-3 border-b flex flex-wrap items-center gap-2 sm:gap-4 justify-between">
@@ -377,24 +380,23 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
                   ))}
                 </select>
 
-                {isRepasseToday(client.data_cadastro, repasses) && (
-                  <button
-                    onClick={handleCloseRepasse}
-                    className="px-3 py-2 bg-blue-600 text-white text-xs sm:text-sm rounded-md"
-                  >
-                    Criar Repasse
-                  </button>
-                )}
+                <button
+                  onClick={handleCloseRepasse}
+                  disabled={isCreate}
+                  className="px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-xs sm:text-sm rounded-lg shadow-sm transition-all duration-200"
+                >
+                  {isCreate ? "Criando..." : "Criar Repasse"}
+                </button>
 
-                <label className="flex items-center gap-1 px-3 py-2 bg-gray-200 rounded-md cursor-pointer text-xs sm:text-sm">
+                <label className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg cursor-pointer text-xs sm:text-sm border border-gray-300 transition-all duration-200 shadow-sm">
                   <Paperclip className="w-3 h-3 sm:w-4 sm:h-4" />
-                  {isImporting ? 'Importando...' : 'Importar'}
+                  {isImporting ? "Importando..." : "Importar"}
                   <input type="file" accept=".csv" onChange={handleImportHistory} className="hidden" />
                 </label>
 
                 <button
                   onClick={() => setShowAddReturn(true)}
-                  className="px-3 py-2 bg-green-600 text-white text-xs sm:text-sm rounded-md flex items-center"
+                  className="px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs sm:text-sm rounded-lg flex items-center shadow-sm transition-all duration-200"
                 >
                   <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                   Adicionar
@@ -437,7 +439,6 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
               </div>
             )}
 
-            {/* Tabela */}
             <div className="overflow-x-auto max-h-80 overflow-y-auto">
               <table className="w-full text-xs sm:text-sm">
                 <thead>
@@ -453,7 +454,6 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
                   {filteredReturns.map((r, index) => {
                     const isEditing = editingReturn?.data === r.data;
 
-                    // Define cores
                     const getColorClass = (value: number) =>
                       value > 0 ? "text-green-600 font-medium" :
                         value < 0 ? "text-red-600 font-medium" : "text-gray-700";
@@ -461,12 +461,19 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
                     return (
                       <tr key={index} className="border-b hover:bg-gray-50 transition">
 
-                        {/* Data */}
                         <td className="py-2 px-3">
-                          {new Date(r.data).toLocaleDateString('pt-BR')}
+                          {isEditing ? (
+                            <input
+                              type="date"
+                              value={editForm.data}
+                              onChange={(e) => setEditForm({ ...editForm, data: e.target.value })}
+                              className="w-full px-2 py-1 border rounded text-xs"
+                            />
+                          ) : (
+                            addOneDay(r.data)
+                          )}
                         </td>
 
-                        {/* Percentual */}
                         <td className="py-2 px-3">
                           {isEditing ? (
                             <input
@@ -483,7 +490,6 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
                           )}
                         </td>
 
-                        {/* Variação */}
                         <td className="py-2 px-3">
                           {isEditing ? (
                             <input
@@ -500,7 +506,6 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
                           )}
                         </td>
 
-                        {/* Rendimento */}
                         <td className="py-2 px-3">
                           {isEditing ? (
                             <input
@@ -512,12 +517,11 @@ export default function ClientDetailsModal({ client, onClose, onUpdated }: Clien
                             />
                           ) : (
                             <span className={getColorClass(r.rendimento)}>
-                              R$ {r.rendimento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              R$ {r.rendimento.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           )}
                         </td>
 
-                        {/* Ações */}
                         <td className="py-2 px-3 flex justify-end gap-2">
                           {isEditing ? (
                             <>

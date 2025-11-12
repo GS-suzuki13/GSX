@@ -11,9 +11,29 @@ interface ClientTableProps {
   onSelectClient: (client: User) => void;
   onRegisterClient: () => void;
   onClientUpdated: (updatedClient: User, action: "edit" | "delete") => void;
+  onAddReturn: () => void;
 }
 
-export default function ClientTable({ clients, sortBy, onSortChange, onSelectClient, onRegisterClient, onClientUpdated }: ClientTableProps) {
+const isToday = (date: string) => {
+  const d = new Date(date);
+  const today = new Date();
+
+  return (
+    d.getDate() === today.getDate() &&
+    d.getMonth() === today.getMonth() &&
+    d.getFullYear() === today.getFullYear()
+  );
+};
+
+export default function ClientTable({
+  clients,
+  sortBy,
+  onSortChange,
+  onSelectClient,
+  onRegisterClient,
+  onClientUpdated,
+  onAddReturn
+}: ClientTableProps) {
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<User>>({});
 
@@ -75,21 +95,38 @@ export default function ClientTable({ clients, sortBy, onSortChange, onSelectCli
           </select>
         </div>
 
-        <button
-          onClick={onRegisterClient}
-          className="inline-flex items-center px-3 sm:px-4 py-2 bg-[#1A2433] text-[#FFFFFF] text-sm font-medium rounded-lg hover:bg-[#00A676] transition-colors w-full sm:w-auto justify-center"
-        >
-          <Plus className="w-4 h-4 mr-2" /> Cadastrar Cliente
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={onAddReturn}
+            className="inline-flex items-center px-4 py-2 bg-[#00A676] text-white text-sm font-medium rounded-lg 
+                      shadow-sm hover:bg-[#02996b] active:scale-95 transition-all w-full sm:w-auto justify-center"
+          >
+            <ClipboardList className="w-4 h-4 mr-2" />
+            Adicionar Rendimento
+          </button>
+
+          {/* Cadastrar novo cliente */}
+          <button
+            onClick={onRegisterClient}
+            className="inline-flex items-center px-4 py-2 bg-[#1A2433] text-white text-sm font-medium rounded-lg 
+                      shadow-sm hover:bg-[#0e1726] active:scale-95 transition-all w-full sm:w-auto justify-center"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Cadastrar Cliente
+          </button>
+        </div>
       </div>
 
-      {/* Table Container - Scroll on mobile */}
+      {/* Table Container */}
       <div className="p-4 sm:p-6 overflow-x-auto">
         <table className="min-w-[800px] w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-[#CBD5E0] bg-[#F9FAFB]">
               {["Nome", "Email", "Cadastro", "Última Alteração", "Valor Aportado", "Contrato", "Ações"].map((col) => (
-                <th key={col} className="text-left py-4 px-3 sm:px-6 font-semibold text-[#1A2433] text-xs sm:text-sm uppercase tracking-wide whitespace-nowrap">
+                <th
+                  key={col}
+                  className="text-left py-4 px-3 sm:px-6 font-semibold text-[#1A2433] text-xs sm:text-sm uppercase tracking-wide whitespace-nowrap"
+                >
                   {col}
                 </th>
               ))}
@@ -99,11 +136,18 @@ export default function ClientTable({ clients, sortBy, onSortChange, onSelectCli
           <tbody>
             {clients.filter((c) => c.token !== "adm").map((client) => {
               const isEditing = editingUser === client.id;
-              const formatDate = (d: string) => new Date(d).toLocaleDateString("pt-BR") + " " + new Date(d).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+              const formatDate = (d: string) =>
+                new Date(d).toLocaleDateString("pt-BR") +
+                " " +
+                new Date(d).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
               return (
-                <tr key={client.id} className="border-b border-[#E2E8F0] hover:bg-[#F8FAFC] transition">
-                  {/* Nome */}
+                <tr
+                  key={client.id}
+                  className={`border-b border-[#E2E8F0] hover:bg-[#F8FAFC] transition ${
+                    client.data_modificacao && isToday(client.data_modificacao) ? "bg-green-100" : ""
+                  }`}
+                >
                   <td className="py-4 px-3 sm:px-6 text-[#1A2433] whitespace-nowrap">
                     {isEditing ? (
                       <input className="border rounded px-2 py-1 w-full" value={editForm.name || ""} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
@@ -112,7 +156,6 @@ export default function ClientTable({ clients, sortBy, onSortChange, onSelectCli
                     )}
                   </td>
 
-                  {/* Email */}
                   <td className="py-4 px-3 sm:px-6 text-[#4A5568] whitespace-nowrap">
                     {isEditing ? (
                       <input className="border rounded px-2 py-1 w-full" value={editForm.email || ""} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
@@ -121,20 +164,23 @@ export default function ClientTable({ clients, sortBy, onSortChange, onSelectCli
                     )}
                   </td>
 
-                  {/* Datas */}
                   <td className="py-4 px-3 sm:px-6 text-[#4A5568] whitespace-nowrap">{client.data_cadastro ? new Date(client.data_cadastro).toLocaleDateString("pt-BR") : "—"}</td>
                   <td className="py-4 px-3 sm:px-6 text-[#4A5568] whitespace-nowrap">{client.data_modificacao ? formatDate(client.data_modificacao) : "—"}</td>
 
-                  {/* Valor */}
                   <td className="py-4 px-3 sm:px-6 text-[#1A2433] whitespace-nowrap">
                     {isEditing ? (
-                      <input type="number" step="0.01" className="border rounded px-2 py-1 w-full" value={editForm.valor_aportado?.toFixed(2) || ""} onChange={(e) => setEditForm({ ...editForm, valor_aportado: Number(e.target.value) })} />
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="border rounded px-2 py-1 w-full"
+                        value={editForm.valor_aportado?.toFixed(2) || ""}
+                        onChange={(e) => setEditForm({ ...editForm, valor_aportado: Number(e.target.value) })}
+                      />
                     ) : (
-                      `R$ ${(client.valor_aportado || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+                      `R$ ${(client.valor_aportado || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                     )}
                   </td>
 
-                  {/* Percentual */}
                   <td className="py-4 px-3 sm:px-6 text-[#1A2433] whitespace-nowrap">
                     {isEditing ? (
                       <input type="number" className="border rounded px-2 py-1 w-full" value={editForm.percentual_contrato || ""} onChange={(e) => setEditForm({ ...editForm, percentual_contrato: Number(e.target.value) })} />
@@ -143,7 +189,6 @@ export default function ClientTable({ clients, sortBy, onSortChange, onSelectCli
                     )}
                   </td>
 
-                  {/* Ações */}
                   <td className="py-4 px-3 sm:px-6 flex items-center gap-3 whitespace-nowrap">
                     {isEditing ? (
                       <>

@@ -21,7 +21,6 @@ export default function ClientRegistrationForm({ onClientRegistered }: ClientReg
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // --- Funções auxiliares ---
   const generateUsername = (nome: string): string => {
     const partes = nome.trim().toLowerCase().split(/\s+/);
     if (partes.length === 1) return partes[0];
@@ -30,7 +29,6 @@ export default function ClientRegistrationForm({ onClientRegistered }: ClientReg
 
   const generatePassword = (cpf: string): string => cpf.replace(/\D/g, "").substring(0, 6);
 
-  // Formatar CPF em tempo real
   const formatCPF = (value: string) => {
     const cpfNumbers = value.replace(/\D/g, "");
     return cpfNumbers
@@ -40,7 +38,6 @@ export default function ClientRegistrationForm({ onClientRegistered }: ClientReg
       .slice(0, 14);
   };
 
-  // Validar CPF oficial
   const validateCPF = (cpf: string) => {
     cpf = cpf.replace(/\D/g, "");
     if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
@@ -60,7 +57,6 @@ export default function ClientRegistrationForm({ onClientRegistered }: ClientReg
     return true;
   };
 
-  // --- FORMATAÇÃO DO VALOR APORTADO ---
   const handleValorAportadoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/\D/g, ""); // remove tudo que não é número
     const numberValue = parseFloat(raw) / 100;

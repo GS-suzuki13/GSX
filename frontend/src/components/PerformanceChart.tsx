@@ -124,6 +124,7 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({ data }) => {
                   style: "currency",
                   currency: "BRL",
                   minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
                 })}
               </text>
             );

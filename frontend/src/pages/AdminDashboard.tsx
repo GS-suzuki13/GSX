@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { User } from "../types";
 import { CSVHandler } from "../utils/csvHandler";
 import ClientRegistrationForm from "../components/ClientRegistrationForm";
 import ClientDetailsModal from "../components/ClientDetailsModal";
 import Header from "../components/layout/Header";
 import AdminOverviewCards from "../components/admin/AdminOverviewCards";
+import ClientNextBusinessDay from "../components/admin/ClientNextBusinessDay";
 import ClientTable from "../components/admin/ClientTable";
-import ClientAniversarioModal from "../components/admin/ClientAniversarioModal";
+import AddReturnModal from "../components/AddReturnModal";
+import { calculateNextRepasseBusinessDays } from "../utils/calculateNextRepasse";
 
 interface AdminDashboardProps {
   user: User;
@@ -18,65 +20,74 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
   const [sortBy, setSortBy] = useState<"nome" | "percentual" | "data" | "data_modificacao">("nome");
   const [selectedClient, setSelectedClient] = useState<User | null>(null);
   const [showClientForm, setShowClientForm] = useState(false);
-  const [clientesProximoRepasse, setClientesProximoRepasse] = useState<(User & { proximoRepasse: string })[]>([]);
-  const [showAniversarioModal, setShowAniversarioModal] = useState(false);
+  const [showNextBusinessDay, setShowNextBusinessDay] = useState(false);
+  const [showAddReturnModal, setShowAddReturnModal] = useState(false);
+  const [clientesProximoRepasse, setClientesProximoRepasse] = useState<
+    (User & { proximoRepasse: string })[]
+  >([]);
 
-  useEffect(() => {
-    fetchClients();
-  }, []);
+  const getNextBusinessDay = () => {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
 
-  const fetchClients = async () => {
+    while ([0, 6].includes(date.getDay())) date.setDate(date.getDate() + 1);
+
+    return date.toLocaleDateString("pt-BR");
+  };
+
+  const fetchClients = useCallback(async () => {
     const data = await CSVHandler.getUsers();
     setClients(data);
 
-    const getNextBusinessDay = () => {
-      const date = new Date();
-      date.setDate(date.getDate() + 1);
-      while (date.getDay() === 0 || date.getDay() === 6) {
-        date.setDate(date.getDate() + 1);
-      }
-      return date;
-    };
+    const nextBusinessDate = getNextBusinessDay();
 
-    const proximoDiaUtil = getNextBusinessDay();
-    const proximoDiaUtilString = proximoDiaUtil.toLocaleDateString("pt-BR");
-
-    const clientesComRepasseNoProximoDiaUtil = data
+    const clientesComRepasse = data
       .filter((cliente) => cliente.data_cadastro && cliente.token !== "adm")
-      .filter((cliente) => calculateNextRepasse(cliente.data_cadastro) === proximoDiaUtilString)
-      .map((cliente) => ({ ...cliente, proximoRepasse: proximoDiaUtilString }));
+      .filter(
+        (cliente) => calculateNextRepasseBusinessDays(cliente.data_cadastro) === nextBusinessDate
+      )
+      .map((cliente) => ({ ...cliente, proximoRepasse: nextBusinessDate }));
 
-    if (clientesComRepasseNoProximoDiaUtil.length > 0) {
-      setClientesProximoRepasse(clientesComRepasseNoProximoDiaUtil);
-      setShowAniversarioModal(true);
+    if (clientesComRepasse.length > 0) {
+      setClientesProximoRepasse(clientesComRepasse);
+      setShowNextBusinessDay(true);
     }
-  };
+  }, []);
 
-  const calculateNextRepasse = (dataCadastro: string): string => {
-    const cadastroDate = new Date(dataCadastro);
-    cadastroDate.setDate(cadastroDate.getDate() + 1);
-    const today = new Date();
+  useEffect(() => {
+    fetchClients();
+  }, [fetchClients]);
 
-    cadastroDate.setFullYear(today.getFullYear(), today.getMonth(), cadastroDate.getDate());
-
-    if (cadastroDate <= today) cadastroDate.setMonth(cadastroDate.getMonth() + 1);
-
-    return cadastroDate.toLocaleDateString("pt-BR");
+  const handleClientUpdated = (updated: User, action: "edit" | "delete") => {
+    setClients((prev) =>
+      action === "delete"
+        ? prev.filter((c) => c.user !== updated.user)
+        : prev.map((c) => (c.user === updated.user ? updated : c))
+    );
   };
 
   const sortedClients = [...clients].sort((a, b) => {
-    if (sortBy === "nome") return a.name.localeCompare(b.name);
-    if (sortBy === "percentual") return (a.percentual_contrato || 0) - (b.percentual_contrato || 0);
-    if (sortBy === "data") return new Date(a.data_cadastro).getTime() - new Date(b.data_cadastro).getTime();
-    if (sortBy === "data_modificacao") return new Date(a.data_modificacao).getTime() - new Date(b.data_modificacao).getTime();
-    return 0;
+    const compare = (valA: any, valB: any) => (valA > valB ? 1 : valA < valB ? -1 : 0);
+
+    switch (sortBy) {
+      case "nome":
+        return compare(a.name, b.name);
+      case "percentual":
+        return compare(a.percentual_contrato || 0, b.percentual_contrato || 0);
+      case "data":
+        return compare(new Date(a.data_cadastro).getTime(), new Date(b.data_cadastro).getTime());
+      case "data_modificacao":
+        return compare(
+          new Date(a.data_modificacao).getTime(),
+          new Date(b.data_modificacao).getTime()
+        );
+      default:
+        return 0;
+    }
   });
 
-  const handleClientUpdated = (updatedClient: User, action: "edit" | "delete") => {
-    setClients((prevClients) => {
-      if (action === "delete") return prevClients.filter((c) => c.user !== updatedClient.user);
-      return prevClients.map((c) => (c.user === updatedClient.user ? updatedClient : c));
-    });
+  const handleAddReturn = () => {
+    setShowAddReturnModal(true);
   };
 
   return (
@@ -84,7 +95,9 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
       <Header title={`Dashboard Administrador - ${user.name}`} onLogout={onLogout} />
 
       <main className="max-w-7xl mx-auto p-4 sm:p-6">
-        <h2 className="text-xl sm:text-2xl font-semibold text-[#1A2433] mb-4 sm:mb-6">Visão Geral</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-[#1A2433] mb-4 sm:mb-6">
+          Visão Geral
+        </h2>
 
         <div className="w-full overflow-x-auto">
           <AdminOverviewCards clients={clients} />
@@ -98,6 +111,7 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
             onSelectClient={setSelectedClient}
             onRegisterClient={() => setShowClientForm(true)}
             onClientUpdated={handleClientUpdated}
+            onAddReturn={handleAddReturn}
           />
         </div>
       </main>
@@ -110,8 +124,11 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
         />
       )}
 
-      {showAniversarioModal && clientesProximoRepasse.length > 0 && (
-        <ClientAniversarioModal data={clientesProximoRepasse} onClose={() => setShowAniversarioModal(false)} />
+      {showNextBusinessDay && clientesProximoRepasse.length > 0 && (
+        <ClientNextBusinessDay
+          data={clientesProximoRepasse}
+          onClose={() => setShowNextBusinessDay(false)}
+        />
       )}
 
       {showClientForm && (
@@ -131,6 +148,14 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
             </button>
           </div>
         </div>
+      )}
+
+      {showAddReturnModal && (
+        <AddReturnModal
+          clients={clients}
+          onClose={() => setShowAddReturnModal(false)}
+          onReturnAdded={fetchClients}
+        />
       )}
     </div>
   );
