@@ -19,13 +19,13 @@ export interface ClientReturn {
   variacao: number;
   rendimento: number;
   userId?: string;
-  repasseId?: number
+  repasseId?: number;
 }
 
-export interface DashboardCard {
-  title: string;
-  value: string;
-  change?: string;
-  changeType?: 'positive' | 'negative';
-  icon: React.ComponentType<any>;
+export interface LoggedUser {
+  id: string;
+  username: string;
+  name: string;
+  token: 'adm' | 'user';
+  role: 'admin' | 'user';
 }

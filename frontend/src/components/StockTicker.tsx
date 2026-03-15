@@ -15,35 +15,47 @@ const StockTicker: React.FC = () => {
   useEffect(() => {
     const fetchStocks = async () => {
       try {
-        const symbols = ['PETR4', 'VALE3', 'ITUB4', 'BBDC4', 'ABEV3', 'WEGE3', 'MGLU3', 'GGBR4'];
+        const symbols = [
+          'PETR4',
+          'VALE3',
+          'ITUB4',
+          'BBDC4',
+          'ABEV3',
+          'WEGE3',
+          'MGLU3',
+          'GGBR4'
+        ];
+
         const allStocks: StockData[] = [];
 
         for (const symbol of symbols) {
           try {
-            const response = await fetch(`https://brapi.dev/api/quote/${symbol}`, {
-              headers: {
-                'Authorization': 'Bearer x8PiMU9K1KKo8sm9G1CqEP'
+            const response = await fetch(
+              `https://brapi.dev/api/quote/${symbol}`,
+              {
+                headers: {
+                  Authorization: 'Bearer x8PiMU9K1KKo8sm9G1CqEP'
+                }
               }
-            });
+            );
 
-            if (!response.ok) {
-              console.warn(`Failed to fetch ${symbol}: ${response.status}`);
-              continue;
-            }
+            if (!response.ok) continue;
 
             const data = await response.json();
 
             if (data.results && data.results.length > 0) {
               const stock = data.results[0];
+
               allStocks.push({
                 symbol: stock.symbol,
                 price: stock.regularMarketPrice || 0,
                 change: stock.regularMarketChange || 0,
-                changePercent: stock.regularMarketChangePercent || 0,
+                changePercent:
+                  stock.regularMarketChangePercent || 0
               });
             }
           } catch (err) {
-            console.warn(`Error fetching ${symbol}:`, err);
+            console.warn(`Erro ao buscar ${symbol}`);
           }
         }
 
@@ -51,33 +63,52 @@ const StockTicker: React.FC = () => {
           setStocks(allStocks);
           setError(null);
         } else {
-          setError('Nenhum dado disponível');
+          setError('Sem dados');
         }
       } catch (error) {
-        console.error('Error fetching stocks:', error);
-        setError('Erro ao carregar cotações');
+        console.error('Erro geral:', error);
+        setError('Erro ao carregar');
       }
     };
 
     fetchStocks();
-    const interval = setInterval(fetchStocks, 5000);
+    const interval = setInterval(fetchStocks, 8000);
+
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="bg-primary text-white py-2 overflow-hidden mt-16">
-      <div className="animate-marquee whitespace-nowrap flex">
+    <div className="bg-black text-white py-2 overflow-hidden border-b border-white/10">
+      <div className="animate-marquee whitespace-nowrap flex text-sm font-medium tracking-wide">
         {[...stocks, ...stocks].map((stock, index) => (
-          <span key={`${stock.symbol}-${index}`} className="mx-8 inline-flex items-center">
-            <span className="font-bold text-secondary">{stock.symbol}</span>
-            <span className="mx-2">R$ {stock.price.toFixed(2)}</span>
-            <span className={`text-sm ${stock.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          <span
+            key={`${stock.symbol}-${index}`}
+            className="mx-8 inline-flex items-center space-x-2"
+          >
+            <span className="text-white font-semibold">
+              {stock.symbol}
+            </span>
+
+            <span className="text-white/80">
+              R$ {stock.price.toFixed(2)}
+            </span>
+
+            <span
+              className={`flex items-center ${
+                stock.change >= 0
+                  ? 'text-green-400'
+                  : 'text-red-400'
+              }`}
+            >
               {stock.change >= 0 ? (
-                <TrendingUp size={14} className="inline mr-2" />
+                <TrendingUp size={14} />
               ) : (
-                <TrendingDown size={14} className="inline mr-2" />
+                <TrendingDown size={14} />
               )}
-              {stock.changePercent.toFixed(2)}%
+
+              <span className="ml-1">
+                {stock.changePercent.toFixed(2)}%
+              </span>
             </span>
           </span>
         ))}

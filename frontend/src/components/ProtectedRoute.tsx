@@ -1,28 +1,36 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
+import { LoggedUser } from '../types';
 
 interface ProtectedRouteProps {
+  allowedRole: 'admin' | 'user';
   children: React.ReactNode;
-  allowedRole?: 'admin' | 'user';
 }
 
-export default function ProtectedRoute({ children, allowedRole }: ProtectedRouteProps) {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  allowedRole,
+  children
+}) => {
+  const location = useLocation();
+
   const storedUser = localStorage.getItem('loggedUser');
 
   if (!storedUser) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   try {
-    const user = JSON.parse(storedUser);
+    const user: LoggedUser = JSON.parse(storedUser);
 
-    if (allowedRole && user.role !== allowedRole) {
-      return <Navigate to="/login" replace />;
+    if (user.role !== allowedRole) {
+      return <Navigate to="/login" replace state={{ from: location }} />;
     }
 
     return <>{children}</>;
   } catch (error) {
-    console.error("Erro ao validar login:", error);
-    return <Navigate to="/login" replace />;
+    localStorage.removeItem('loggedUser');
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
-}
+};
+
+export default ProtectedRoute;

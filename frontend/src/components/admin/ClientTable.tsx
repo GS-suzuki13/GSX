@@ -1,38 +1,19 @@
-import React, { useState } from "react";
-import { Filter, Plus, ClipboardList, Pencil, X, Check } from "lucide-react";
-import { User } from "../../types";
+import React, { useState } from 'react';
+import { ClipboardList, Pencil, Trash2, Check, X } from 'lucide-react';
+import { User } from '../../types';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 interface ClientTableProps {
   clients: User[];
-  sortBy: "nome" | "percentual" | "data" | "data_modificacao";
-  onSortChange: (value: "nome" | "percentual" | "data" | "data_modificacao") => void;
   onSelectClient: (client: User) => void;
-  onRegisterClient: () => void;
-  onClientUpdated: (updatedClient: User, action: "edit" | "delete") => void;
-  onAddReturn: () => void;
+  onClientUpdated: (updatedClient: User, action: 'edit' | 'delete') => void;
 }
-
-const isToday = (date: string) => {
-  const d = new Date(date);
-  const today = new Date();
-
-  return (
-    d.getDate() === today.getDate() &&
-    d.getMonth() === today.getMonth() &&
-    d.getFullYear() === today.getFullYear()
-  );
-};
 
 export default function ClientTable({
   clients,
-  sortBy,
-  onSortChange,
   onSelectClient,
-  onRegisterClient,
-  onClientUpdated,
-  onAddReturn
+  onClientUpdated
 }: ClientTableProps) {
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<User>>({});
@@ -49,166 +30,232 @@ export default function ClientTable({
 
   const handleSaveEdit = async () => {
     if (!editingUser) return;
+
     try {
       const res = await fetch(`${apiUrl}/users/${editingUser}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editForm),
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm)
       });
-      if (!res.ok) throw new Error("Erro ao editar usuário");
+
+      if (!res.ok) throw new Error();
+
       setEditingUser(null);
-      setEditForm({});
-      onClientUpdated(editForm as User, "edit");
+      onClientUpdated(editForm as User, 'edit');
     } catch {
-      alert("Falha ao salvar alterações.");
+      alert('Erro ao salvar alterações.');
     }
   };
 
   const handleDelete = async (client: User) => {
     if (!window.confirm(`Excluir cliente "${client.name}"?`)) return;
+
     try {
-      const res = await fetch(`${apiUrl}/users/${client.id}`, { method: "DELETE" });
+      const res = await fetch(`${apiUrl}/users/${client.id}`, {
+        method: 'DELETE'
+      });
+
       if (!res.ok) throw new Error();
-      onClientUpdated(client, "delete");
+
+      onClientUpdated(client, 'delete');
     } catch {
-      alert("Falha ao excluir cliente.");
+      alert('Erro ao excluir cliente.');
     }
   };
 
+  const formatDate = (date?: string) => {
+    if (!date) return '—';
+
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) return '—';
+
+    return parsed.toLocaleDateString('pt-BR');
+  };
+
+  const formatDateTime = (date?: string) => {
+    if (!date) return '—';
+
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) return '—';
+
+    return (
+      parsed.toLocaleDateString('pt-BR') +
+      ' ' +
+      parsed.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    );
+  };
+
+  const formatMoney = (value?: number) =>
+    `R$ ${Number(value || 0).toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
+
   return (
-    <div className="bg-[#FFFFFF] rounded-2xl shadow-sm border border-[#CBD5E0] w-full overflow-hidden">
-      {/* Header */}
-      <div className="px-4 sm:px-6 py-4 border-b border-[#CBD5E0] flex flex-wrap gap-3 justify-between items-center">
-        <h2 className="text-lg font-semibold text-[#1A2433]">Clientes</h2>
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[1000px] text-sm text-left text-gray-300">
+        <thead className="bg-[#0f172a] text-gray-400 uppercase text-xs">
+          <tr>
+            <th className="px-6 py-4">Nome</th>
+            <th className="px-6 py-4">Email</th>
+            <th className="px-6 py-4">Cadastro</th>
+            <th className="px-6 py-4">Última alteração</th>
+            <th className="px-6 py-4">Aporte</th>
+            <th className="px-6 py-4">Contrato</th>
+            <th className="px-6 py-4 text-right">Ações</th>
+          </tr>
+        </thead>
 
-        <div className="flex items-center space-x-2">
-          <Filter className="w-5 h-5 text-[#4A5568] hidden sm:block" />
-          <select
-            value={sortBy}
-            onChange={(e) => onSortChange(e.target.value as any)}
-            className="border border-[#CBD5E0] rounded-lg px-2 sm:px-3 py-2 text-sm text-[#1A2433]"
-          >
-            <option value="nome">Nome (A-Z)</option>
-            <option value="percentual">Contrato</option>
-            <option value="data">Cadastro</option>
-            <option value="data_modificacao">Última Alteração</option>
-          </select>
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            onClick={onAddReturn}
-            className="inline-flex items-center px-4 py-2 bg-[#00A676] text-white text-sm font-medium rounded-lg 
-                      shadow-sm hover:bg-[#02996b] active:scale-95 transition-all w-full sm:w-auto justify-center"
-          >
-            <ClipboardList className="w-4 h-4 mr-2" />
-            Adicionar Rendimento
-          </button>
-
-          {/* Cadastrar novo cliente */}
-          <button
-            onClick={onRegisterClient}
-            className="inline-flex items-center px-4 py-2 bg-[#1A2433] text-white text-sm font-medium rounded-lg 
-                      shadow-sm hover:bg-[#0e1726] active:scale-95 transition-all w-full sm:w-auto justify-center"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Cadastrar Cliente
-          </button>
-        </div>
-      </div>
-
-      {/* Table Container */}
-      <div className="p-4 sm:p-6 overflow-x-auto">
-        <table className="min-w-[800px] w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-[#CBD5E0] bg-[#F9FAFB]">
-              {["Nome", "Email", "Cadastro", "Última Alteração", "Valor Aportado", "Contrato", "Ações"].map((col) => (
-                <th
-                  key={col}
-                  className="text-left py-4 px-3 sm:px-6 font-semibold text-[#1A2433] text-xs sm:text-sm uppercase tracking-wide whitespace-nowrap"
-                >
-                  {col}
-                </th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody>
-            {clients.filter((c) => c.token !== "adm").map((client) => {
+        <tbody>
+          {clients
+            .filter((c) => c.token !== 'adm')
+            .map((client) => {
               const isEditing = editingUser === client.id;
-              const formatDate = (d: string) =>
-                new Date(d).toLocaleDateString("pt-BR") +
-                " " +
-                new Date(d).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
               return (
                 <tr
                   key={client.id}
-                  className={`border-b border-[#E2E8F0] hover:bg-[#F8FAFC] transition ${
-                    client.data_modificacao && isToday(client.data_modificacao) ? "bg-green-100" : ""
-                  }`}
+                  className="border-t border-white/5 hover:bg-white/5 transition"
                 >
-                  <td className="py-4 px-3 sm:px-6 text-[#1A2433] whitespace-nowrap">
+                  <td className="px-6 py-4 font-medium text-white">
                     {isEditing ? (
-                      <input className="border rounded px-2 py-1 w-full" value={editForm.name || ""} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+                      <input
+                        className="w-full bg-[#0f172a] border border-white/10 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        value={editForm.name || ''}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, name: e.target.value })
+                        }
+                      />
                     ) : (
                       client.name
                     )}
                   </td>
 
-                  <td className="py-4 px-3 sm:px-6 text-[#4A5568] whitespace-nowrap">
+                  <td className="px-6 py-4 text-gray-300">
                     {isEditing ? (
-                      <input className="border rounded px-2 py-1 w-full" value={editForm.email || ""} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
+                      <input
+                        className="w-full bg-[#0f172a] border border-white/10 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        value={editForm.email || ''}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, email: e.target.value })
+                        }
+                      />
                     ) : (
                       client.email
                     )}
                   </td>
 
-                  <td className="py-4 px-3 sm:px-6 text-[#4A5568] whitespace-nowrap">{client.data_cadastro ? new Date(client.data_cadastro).toLocaleDateString("pt-BR") : "—"}</td>
-                  <td className="py-4 px-3 sm:px-6 text-[#4A5568] whitespace-nowrap">{client.data_modificacao ? formatDate(client.data_modificacao) : "—"}</td>
+                  <td className="px-6 py-4 text-gray-300">
+                    {formatDate(client.data_cadastro)}
+                  </td>
 
-                  <td className="py-4 px-3 sm:px-6 text-[#1A2433] whitespace-nowrap">
+                  <td className="px-6 py-4 text-gray-300">
+                    {formatDateTime(client.data_modificacao)}
+                  </td>
+
+                  <td className="px-6 py-4 text-white">
                     {isEditing ? (
                       <input
                         type="number"
-                        step="0.01"
-                        className="border rounded px-2 py-1 w-full"
-                        value={editForm.valor_aportado?.toFixed(2) || ""}
-                        onChange={(e) => setEditForm({ ...editForm, valor_aportado: Number(e.target.value) })}
+                        className="w-full bg-[#0f172a] border border-white/10 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        value={editForm.valor_aportado || ''}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            valor_aportado: Number(e.target.value)
+                          })
+                        }
                       />
                     ) : (
-                      `R$ ${(client.valor_aportado || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                      formatMoney(client.valor_aportado)
                     )}
                   </td>
 
-                  <td className="py-4 px-3 sm:px-6 text-[#1A2433] whitespace-nowrap">
+                  <td className="px-6 py-4 text-white">
                     {isEditing ? (
-                      <input type="number" className="border rounded px-2 py-1 w-full" value={editForm.percentual_contrato || ""} onChange={(e) => setEditForm({ ...editForm, percentual_contrato: Number(e.target.value) })} />
+                      <input
+                        type="number"
+                        className="w-full bg-[#0f172a] border border-white/10 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        value={editForm.percentual_contrato || ''}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            percentual_contrato: Number(e.target.value)
+                          })
+                        }
+                      />
+                    ) : client.percentual_contrato ? (
+                      `${client.percentual_contrato}%`
                     ) : (
-                      client.percentual_contrato ? `${client.percentual_contrato}%` : "—"
+                      '—'
                     )}
                   </td>
 
-                  <td className="py-4 px-3 sm:px-6 flex items-center gap-3 whitespace-nowrap">
-                    {isEditing ? (
-                      <>
-                        <button onClick={handleSaveEdit} className="text-[#00A676] hover:text-[#00855C]"><Check className="w-5 h-5" /></button>
-                        <button onClick={handleCancelEdit} className="text-red-500 hover:text-red-600"><X className="w-5 h-5" /></button>
-                      </>
-                    ) : (
-                      <>
-                        <button onClick={() => onSelectClient(client)} className="text-[#4A5568] hover:text-secondary"><ClipboardList className="w-5 h-5" /></button>
-                        <button onClick={() => handleEditClick(client)} className="text-[#4A5568] hover:text-[#00A676]"><Pencil className="w-5 h-5" /></button>
-                        <button onClick={() => handleDelete(client)} className="text-[#4A5568] hover:text-red-500"><X className="w-5 h-5" /></button>
-                      </>
-                    )}
+                  <td className="px-6 py-4">
+                    <div className="flex justify-end items-center gap-3">
+                      {isEditing ? (
+                        <>
+                          <button
+                            onClick={handleSaveEdit}
+                            className="text-emerald-400 hover:text-emerald-300 transition"
+                            title="Salvar"
+                          >
+                            <Check size={18} />
+                          </button>
+
+                          <button
+                            onClick={handleCancelEdit}
+                            className="text-gray-400 hover:text-white transition"
+                            title="Cancelar"
+                          >
+                            <X size={18} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => onSelectClient(client)}
+                            className="text-gray-400 hover:text-white transition"
+                            title="Detalhes"
+                          >
+                            <ClipboardList size={18} />
+                          </button>
+
+                          <button
+                            onClick={() => handleEditClick(client)}
+                            className="text-gray-400 hover:text-indigo-400 transition"
+                            title="Editar"
+                          >
+                            <Pencil size={18} />
+                          </button>
+
+                          <button
+                            onClick={() => handleDelete(client)}
+                            className="text-gray-400 hover:text-red-400 transition"
+                            title="Excluir"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
             })}
-          </tbody>
-        </table>
-      </div>
+
+          {clients.filter((c) => c.token !== 'adm').length === 0 && (
+            <tr>
+              <td colSpan={7} className="text-center py-8 text-gray-500">
+                Nenhum cliente encontrado
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
     </div>
   );
 }
