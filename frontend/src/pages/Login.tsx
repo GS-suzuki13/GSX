@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { User, Lock, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { CSVHandler } from '../utils/csvHandler';
 import StockTicker from '../components/StockTicker';
 import logo from '../assets/logo.png';
-import { LoggedUser } from '../types';
+import type { LoggedUser } from '../types';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const hasRedirected = useRef(false);
 
   const [formData, setFormData] = useState({
     username: '',
@@ -19,27 +20,31 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('loggedUser');
+    if (hasRedirected.current) return;
 
+    const storedUser = localStorage.getItem('loggedUser');
     if (!storedUser) return;
 
     try {
       const user: LoggedUser = JSON.parse(storedUser);
+      hasRedirected.current = true;
 
       if (user.role === 'admin') {
-        navigate('/admin/dashboard', { replace: true });
+        window.location.replace('/admin/dashboard');
         return;
       }
 
       if (user.role === 'user') {
-        navigate('/dashboard-cliente', { replace: true });
+        window.location.replace('/dashboard-cliente');
         return;
       }
 
       localStorage.removeItem('loggedUser');
+      hasRedirected.current = false;
     } catch (error) {
       console.error('Erro ao validar sessão:', error);
       localStorage.removeItem('loggedUser');
+      hasRedirected.current = false;
     }
   }, [navigate]);
 
@@ -61,6 +66,7 @@ const Login: React.FC = () => {
 
       if (!foundUser) {
         setError('Usuário ou senha inválidos');
+        setIsLoading(false);
         return;
       }
 
@@ -77,14 +83,13 @@ const Login: React.FC = () => {
 
       localStorage.setItem('loggedUser', JSON.stringify(userData));
 
-      navigate(
-        role === 'admin' ? '/admin/dashboard' : '/dashboard-cliente',
-        { replace: true }
+      // força recarga completa para evitar entrar no dashboard com estado antigo
+      window.location.replace(
+        role === 'admin' ? '/admin/dashboard' : '/dashboard-cliente'
       );
     } catch (error) {
       console.error('Erro ao autenticar:', error);
       setError('Erro ao autenticar usuário');
-    } finally {
       setIsLoading(false);
     }
   };

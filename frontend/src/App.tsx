@@ -7,16 +7,27 @@ import ClientsPage from './pages/admin/ClientsPage';
 import ReturnsPage from './pages/admin/ReturnsPage';
 import ClientDashboard from './pages/ClientDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
-import { LoggedUser } from './types';
+import type { LoggedUser } from './types';
+
+function getStoredUser(): LoggedUser | null {
+  const storedUser = localStorage.getItem('loggedUser');
+
+  if (!storedUser) return null;
+
+  try {
+    return JSON.parse(storedUser) as LoggedUser;
+  } catch (error) {
+    console.error('Erro ao ler usuário salvo:', error);
+    localStorage.removeItem('loggedUser');
+    return null;
+  }
+}
 
 function App() {
   const handleLogout = () => {
     localStorage.removeItem('loggedUser');
-    window.location.href = '/login';
+    window.location.replace('/login');
   };
-
-  const storedUser = localStorage.getItem('loggedUser');
-  const user: LoggedUser | null = storedUser ? JSON.parse(storedUser) : null;
 
   return (
     <BrowserRouter>
@@ -27,11 +38,10 @@ function App() {
           path="/dashboard-cliente"
           element={
             <ProtectedRoute allowedRole="user">
-              {user ? (
-                <ClientDashboard user={user} onLogout={handleLogout} />
-              ) : (
-                <Navigate to="/login" replace />
-              )}
+              <ClientDashboard
+                user={getStoredUser()}
+                onLogout={handleLogout}
+              />
             </ProtectedRoute>
           }
         />
