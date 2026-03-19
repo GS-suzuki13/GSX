@@ -19,7 +19,7 @@ export interface ClientReturn {
   variacao: number;
   rendimento: number;
   userId?: string;
-  repasseId?: number;
+  repasseId?: number | null;
 }
 
 export interface LoggedUser {

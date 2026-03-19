@@ -5,9 +5,9 @@ import AdminLayout from './pages/admin/AdminLayout';
 import DashboardPage from './pages/admin/DashboardPage';
 import ClientsPage from './pages/admin/ClientsPage';
 import ReturnsPage from './pages/admin/ReturnsPage';
-import ReportsPage from './pages/admin/ReportsPage';
 import ClientDashboard from './pages/ClientDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
+import { LoggedUser } from './types';
 
 function App() {
   const handleLogout = () => {
@@ -16,7 +16,7 @@ function App() {
   };
 
   const storedUser = localStorage.getItem('loggedUser');
-  const user = storedUser ? JSON.parse(storedUser) : null;
+  const user: LoggedUser | null = storedUser ? JSON.parse(storedUser) : null;
 
   return (
     <BrowserRouter>
@@ -27,7 +27,11 @@ function App() {
           path="/dashboard-cliente"
           element={
             <ProtectedRoute allowedRole="user">
-              <ClientDashboard user={user} onLogout={handleLogout} />
+              {user ? (
+                <ClientDashboard user={user} onLogout={handleLogout} />
+              ) : (
+                <Navigate to="/login" replace />
+              )}
             </ProtectedRoute>
           }
         />
@@ -44,7 +48,6 @@ function App() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="clientes" element={<ClientsPage />} />
           <Route path="rendimentos" element={<ReturnsPage />} />
-          {/* <Route path="relatorios" element={<ReportsPage />} /> */}
         </Route>
 
         <Route path="/" element={<Navigate to="/login" replace />} />

@@ -10,7 +10,7 @@ import {
   Calendar,
   DollarSign
 } from 'lucide-react';
-import { User, ClientReturn } from '../types';
+import type { User, ClientReturn } from '../types';
 import { calculateNextRepasseBusinessDays } from '../utils/calculateNextRepasse';
 
 interface Repasse {
@@ -82,6 +82,19 @@ export default function ReturnsManagerModal({
     });
   };
 
+  const formatDateOnly = (dateStr: string) => {
+    if (!dateStr) return '—';
+
+    const raw = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const [year, month, day] = raw.split('-');
+
+    if (year && month && day) {
+      return `${day}/${month}/${year}`;
+    }
+
+    return dateStr;
+  };
+
   const loadClientReturns = async () => {
     try {
       const response = await fetch(`${apiUrl}/returns/${client.id}`);
@@ -91,11 +104,14 @@ export default function ReturnsManagerModal({
         return;
       }
 
-      if (!response.ok) throw new Error('Erro ao carregar rendimentos');
+      if (!response.ok) {
+        throw new Error('Erro ao carregar rendimentos');
+      }
 
       const data = await response.json();
 
       const parsed: ClientReturn[] = (Array.isArray(data) ? data : []).map((item: any) => ({
+        id: item.id,
         data: item.data,
         percentual: Number(item.percentual) || 0,
         variacao:
@@ -103,7 +119,8 @@ export default function ReturnsManagerModal({
             ? NaN
             : Number(item.variacao),
         rendimento: Number(item.rendimento) || 0,
-        repasseId: item.repasseId
+        userId: item.userId,
+        repasseId: item.repasseId ?? null
       }));
 
       setReturns(normalizeReturnsWithVariation(parsed));
@@ -122,11 +139,14 @@ export default function ReturnsManagerModal({
         return;
       }
 
-      if (!response.ok) throw new Error('Erro ao carregar repasses');
+      if (!response.ok) {
+        throw new Error('Erro ao carregar repasses');
+      }
 
       const data = await response.json();
       const repassesArray = Array.isArray(data.repasses) ? data.repasses : data;
-      setRepasses(repassesArray);
+
+      setRepasses(Array.isArray(repassesArray) ? repassesArray : []);
       setSelectedRepasseId('current');
     } catch (err) {
       console.error(err);
@@ -145,7 +165,7 @@ export default function ReturnsManagerModal({
 
   useEffect(() => {
     if (client) {
-      loadAll();
+      void loadAll();
     }
   }, [client]);
 
@@ -161,11 +181,18 @@ export default function ReturnsManagerModal({
 
   const handleAddReturn = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (isSaving) return;
+
+    const percentualTotal = parseFloat(returnForm.percentual);
+
+    if (Number.isNaN(percentualTotal) || percentualTotal <= 0) {
+      alert('Informe um percentual válido.');
+      return;
+    }
 
     setIsSaving(true);
 
-    const percentualTotal = parseFloat(returnForm.percentual);
     const percentual = (percentualTotal / 100) * (client.percentual_contrato / 100);
     const rendimento = client.valor_aportado * percentual;
     const formattedPercentual = percentual * 100;
@@ -193,12 +220,11 @@ export default function ReturnsManagerModal({
         body: JSON.stringify(newReturn)
       });
 
-      if (!response.ok) throw new Error('Erro ao salvar rendimento');
+      if (!response.ok) {
+        throw new Error('Erro ao salvar rendimento');
+      }
 
-      const result = await response.json();
-      const updated = normalizeReturnsWithVariation([...returns, result.return]);
-
-      setReturns(updated);
+      await loadClientReturns();
       setReturnForm({ percentual: '' });
       setShowAddReturn(false);
       onUpdated();
@@ -213,7 +239,7 @@ export default function ReturnsManagerModal({
   const handleEditClick = (r: ClientReturn) => {
     const normalizedDate = r.data.includes('/')
       ? r.data.split('/').reverse().join('-')
-      : r.data;
+      : (r.data.includes('T') ? r.data.split('T')[0] : r.data);
 
     setEditingReturn({ ...r, data: normalizedDate });
     setEditForm({
@@ -241,15 +267,11 @@ export default function ReturnsManagerModal({
         body: JSON.stringify(updatedData)
       });
 
-      if (!response.ok) throw new Error('Erro ao atualizar rendimento');
+      if (!response.ok) {
+        throw new Error('Erro ao atualizar rendimento');
+      }
 
-      const result = await response.json();
-
-      const updatedList = returns.map((r) =>
-        r.data === editingReturn.data ? { ...result.return, data: editForm.data } : r
-      );
-
-      setReturns(normalizeReturnsWithVariation(updatedList));
+      await loadClientReturns();
       setEditingReturn(null);
       onUpdated();
     } catch (err) {
@@ -260,6 +282,7 @@ export default function ReturnsManagerModal({
 
   const handleDeleteReturn = async (r: ClientReturn) => {
     const confirmDelete = window.confirm('Deseja excluir este rendimento?');
+
     if (!confirmDelete) return;
 
     try {
@@ -267,10 +290,11 @@ export default function ReturnsManagerModal({
         method: 'DELETE'
       });
 
-      if (!response.ok) throw new Error('Erro ao excluir rendimento');
+      if (!response.ok) {
+        throw new Error('Erro ao excluir rendimento');
+      }
 
-      const updated = returns.filter((ret) => ret.data !== r.data);
-      setReturns(normalizeReturnsWithVariation(updated));
+      await loadClientReturns();
       onUpdated();
     } catch (err) {
       console.error(err);
@@ -292,7 +316,9 @@ export default function ReturnsManagerModal({
         body: formData
       });
 
-      if (!response.ok) throw new Error('Erro ao importar histórico');
+      if (!response.ok) {
+        throw new Error('Erro ao importar histórico');
+      }
 
       await loadClientReturns();
       onUpdated();
@@ -307,6 +333,7 @@ export default function ReturnsManagerModal({
 
   const handleCloseRepasse = async () => {
     const confirmClose = window.confirm('Deseja criar repasse?');
+
     if (!confirmClose) return;
 
     setIsCreate(true);
@@ -316,7 +343,9 @@ export default function ReturnsManagerModal({
         method: 'POST'
       });
 
-      if (!response.ok) throw new Error('Erro ao fechar repasse');
+      if (!response.ok) {
+        throw new Error('Erro ao fechar repasse');
+      }
 
       const newRepasse = await response.json();
 
@@ -325,9 +354,11 @@ export default function ReturnsManagerModal({
 
       const updatedReturns = returns.map((r) => {
         const rDate = new Date(r.data);
+
         if (!r.repasseId && rDate <= new Date(newRepasse.end)) {
           return { ...r, repasseId: newRepasse.id };
         }
+
         return r;
       });
 
@@ -359,26 +390,14 @@ export default function ReturnsManagerModal({
         client.valor_aportado = novoValorAportado;
         onUpdated();
       }
+
+      await loadAll();
     } catch (err) {
       console.error(err);
       alert('Erro ao fechar repasse');
     } finally {
       setIsCreate(false);
     }
-  };
-
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '—';
-
-    const parsed = new Date(dateStr);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed.toLocaleDateString('pt-BR');
-    }
-
-    const [year, month, day] = dateStr.split('-');
-    if (year && month && day) return `${day}/${month}/${year}`;
-
-    return dateStr;
   };
 
   const totalReturn = filteredReturns.reduce((sum, r) => sum + r.rendimento, 0);
@@ -472,17 +491,23 @@ export default function ReturnsManagerModal({
                   }
                   onChange={(e) => {
                     const v = e.target.value;
-                    if (v === 'all') setSelectedRepasseId('all');
-                    else if (v === 'current') setSelectedRepasseId('current');
-                    else setSelectedRepasseId(Number(v));
+
+                    if (v === 'all') {
+                      setSelectedRepasseId('all');
+                    } else if (v === 'current') {
+                      setSelectedRepasseId('current');
+                    } else {
+                      setSelectedRepasseId(Number(v));
+                    }
                   }}
                   className="px-3 py-2 bg-[#111827] border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="all">Todos rendimentos</option>
                   <option value="current">Atual</option>
+
                   {repasses.map((rep) => (
                     <option key={rep.id} value={String(rep.id)}>
-                      {rep.label} ({formatDate(rep.start)} - {formatDate(rep.end)})
+                      {rep.label} ({formatDateOnly(rep.start)} - {formatDateOnly(rep.end)})
                     </option>
                   ))}
                 </select>
@@ -524,9 +549,7 @@ export default function ReturnsManagerModal({
                     step="0.01"
                     placeholder="% total"
                     value={returnForm.percentual}
-                    onChange={(e) =>
-                      setReturnForm({ percentual: e.target.value })
-                    }
+                    onChange={(e) => setReturnForm({ percentual: e.target.value })}
                     className="px-3 py-2 bg-[#0f172a] border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     required
                   />
@@ -573,11 +596,14 @@ export default function ReturnsManagerModal({
 
                   <tbody>
                     {filteredReturns.map((r, index) => {
-                      const isEditing = editingReturn?.data === r.data;
+                      const isEditing =
+                        editingReturn?.id !== undefined && r.id !== undefined
+                          ? editingReturn.id === r.id
+                          : editingReturn?.data === r.data;
 
                       return (
                         <tr
-                          key={`${r.data}-${index}`}
+                          key={r.id ?? `${r.data}-${index}`}
                           className="border-t border-white/5 hover:bg-white/5 transition"
                         >
                           <td className="px-4 py-3">
@@ -591,7 +617,7 @@ export default function ReturnsManagerModal({
                                 className="w-full px-2 py-2 bg-[#0f172a] border border-white/10 rounded text-sm text-white"
                               />
                             ) : (
-                              formatDate(r.data)
+                              formatDateOnly(r.data)
                             )}
                           </td>
 

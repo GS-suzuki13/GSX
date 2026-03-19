@@ -28,6 +28,20 @@ export default function ClientDetailsModal({
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
+  const parseLocalDate = (dateStr?: string) => {
+    if (!dateStr) return new Date(0);
+
+    const raw = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const [year, month, day] = raw.split('-').map(Number);
+
+    if (!year || !month || !day) {
+      const fallback = new Date(dateStr);
+      return Number.isNaN(fallback.getTime()) ? new Date(0) : fallback;
+    }
+
+    return new Date(year, month - 1, day);
+  };
+
   const formatMoney = (value: number) =>
     value.toLocaleString('pt-BR', {
       style: 'currency',
@@ -37,13 +51,18 @@ export default function ClientDetailsModal({
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '—';
 
+    const raw = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const [year, month, day] = raw.split('-');
+
+    if (year && month && day) {
+      return `${day}/${month}/${year}`;
+    }
+
     const parsed = new Date(dateStr);
+
     if (!Number.isNaN(parsed.getTime())) {
       return parsed.toLocaleDateString('pt-BR');
     }
-
-    const [year, month, day] = dateStr.split('-');
-    if (year && month && day) return `${day}/${month}/${year}`;
 
     return dateStr;
   };
@@ -66,6 +85,7 @@ export default function ClientDetailsModal({
       const data = await response.json();
 
       const parsed: ClientReturn[] = (Array.isArray(data) ? data : []).map((item: any) => ({
+        id: item.id,
         data: item.data,
         percentual: Number(item.percentual) || 0,
         variacao:
@@ -73,11 +93,12 @@ export default function ClientDetailsModal({
             ? NaN
             : Number(item.variacao),
         rendimento: Number(item.rendimento) || 0,
+        userId: item.userId,
         repasseId: item.repasseId ?? null
       }));
 
       const ordered = [...parsed].sort(
-        (a, b) => new Date(a.data).getTime() - new Date(b.data).getTime()
+        (a, b) => parseLocalDate(a.data).getTime() - parseLocalDate(b.data).getTime()
       );
 
       const normalized = ordered.map((item, index, arr) => {
@@ -123,7 +144,11 @@ export default function ClientDetailsModal({
       }
 
       const data = await response.json();
-      const repassesArray = Array.isArray(data?.repasses) ? data.repasses : Array.isArray(data) ? data : [];
+      const repassesArray = Array.isArray(data?.repasses)
+        ? data.repasses
+        : Array.isArray(data)
+          ? data
+          : [];
 
       setRepasses(repassesArray);
       setSelectedRepasseId('current');
@@ -138,8 +163,8 @@ export default function ClientDetailsModal({
   useEffect(() => {
     if (!client) return;
 
-    loadClientReturns();
-    loadRepasses();
+    void loadClientReturns();
+    void loadRepasses();
   }, [client]);
 
   const filteredReturns = useMemo(() => {
@@ -149,7 +174,7 @@ export default function ClientDetailsModal({
         if (selectedRepasseId === 'current' || selectedRepasseId === null) return !r.repasseId;
         return r.repasseId === selectedRepasseId;
       })
-      .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+      .sort((a, b) => parseLocalDate(a.data).getTime() - parseLocalDate(b.data).getTime());
   }, [returns, selectedRepasseId]);
 
   const totalReturn = useMemo(() => {
@@ -158,6 +183,7 @@ export default function ClientDetailsModal({
 
   const mediaPercentual = useMemo(() => {
     if (!filteredReturns.length) return 0;
+
     return (
       filteredReturns.reduce((sum, r) => sum + (r.percentual || 0), 0) /
       filteredReturns.length
@@ -286,7 +312,7 @@ export default function ClientDetailsModal({
                     <tbody>
                       {filteredReturns.map((r, index) => (
                         <tr
-                          key={`${r.data}-${index}`}
+                          key={`${r.id ?? r.data}-${index}`}
                           className="border-t border-white/5 hover:bg-white/5 transition"
                         >
                           <td className="px-4 py-3 text-gray-300">

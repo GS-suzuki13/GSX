@@ -26,8 +26,13 @@ const Login: React.FC = () => {
     try {
       const user: LoggedUser = JSON.parse(storedUser);
 
-      if (user.role === 'admin' || user.role === 'user') {
-        navigate('/boas-vindas', { replace: true });
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
+        return;
+      }
+
+      if (user.role === 'user') {
+        navigate('/dashboard-cliente', { replace: true });
         return;
       }
 
@@ -71,7 +76,11 @@ const Login: React.FC = () => {
       };
 
       localStorage.setItem('loggedUser', JSON.stringify(userData));
-      navigate('/boas-vindas', { replace: true });
+
+      navigate(
+        role === 'admin' ? '/admin/dashboard' : '/dashboard-cliente',
+        { replace: true }
+      );
     } catch (error) {
       console.error('Erro ao autenticar:', error);
       setError('Erro ao autenticar usuário');
