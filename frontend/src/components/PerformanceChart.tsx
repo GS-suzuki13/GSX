@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 interface ChartData {
   month: string;
@@ -17,79 +17,100 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({ data }) => {
     month: string;
   } | null>(null);
 
-  if (!data || data.length === 0) return null;
+  const chart = useMemo(() => {
+    if (!data || data.length === 0) return null;
 
-  const maxValue = Math.max(...data.map((d) => d.value));
-  const minValue = Math.min(...data.map((d) => d.value));
-  const range = maxValue - minValue || 1;
+    const maxValue = Math.max(...data.map((d) => d.value));
+    const minValue = Math.min(...data.map((d) => d.value));
+    const range = maxValue - minValue || 1;
+
+    const getX = (index: number) =>
+      data.length === 1 ? 400 : 50 + (index / (data.length - 1)) * 700;
+
+    const getY = (value: number) =>
+      250 - ((value - minValue) / range) * 200;
+
+    const linePoints = data
+      .map((point, index) => `${getX(index)},${getY(point.value)}`)
+      .join(' ');
+
+    const areaPoints = `50,250 ${linePoints} 750,250`;
+
+    const yLabels = [0, 1, 2, 3, 4].map((i) => {
+      const value = minValue + (range * i) / 4;
+      return {
+        label: value.toLocaleString('pt-BR', {
+          style: 'currency',
+          currency: 'BRL',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }),
+        y: 255 - i * 50
+      };
+    });
+
+    const gridLines = [0, 1, 2, 3, 4].map((i) => 50 + i * 50);
+
+    return {
+      minValue,
+      maxValue,
+      range,
+      getX,
+      getY,
+      linePoints,
+      areaPoints,
+      yLabels,
+      gridLines
+    };
+  }, [data]);
+
+  if (!chart || data.length === 0) return null;
 
   return (
     <div className="w-full h-80 relative">
-      {/* 🔹 Overflow hidden e padding extra na direita */}
-      <div className="relative h-full bg-gray-50 rounded-lg p-4 overflow-hidden pr-12">
+      <div className="relative h-full bg-[#0b1120] rounded-2xl p-4 overflow-hidden border border-white/10">
         <svg
           width="100%"
           height="100%"
           viewBox="0 0 800 300"
           className="overflow-visible"
         >
-          {/* Grid lines */}
-          {[0, 1, 2, 3, 4].map((i) => (
+          <defs>
+            <linearGradient id="performanceGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#6366f1" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#6366f1" stopOpacity="0.04" />
+            </linearGradient>
+          </defs>
+
+          {chart.gridLines.map((y, index) => (
             <line
-              key={i}
+              key={index}
               x1="50"
-              y1={50 + i * 50}
+              y1={y}
               x2="750"
-              y2={50 + i * 50}
-              stroke="#e5e7eb"
+              y2={y}
+              stroke="rgba(255,255,255,0.08)"
               strokeWidth="1"
             />
           ))}
 
-          {/* Area gradient */}
-          <defs>
-            <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#F0C040" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#F0C040" stopOpacity="0.1" />
-            </linearGradient>
-          </defs>
-
-          {/* Área preenchida */}
           <polygon
-            fill="url(#gradient)"
-            points={`50,250 ${data
-              .map((point, index) => {
-                const x = 50 + (index / (data.length - 1)) * 700;
-                const y = 250 - ((point.value - minValue) / range) * 200;
-                return `${x},${y}`;
-              })
-              .join(' ')} 750,250`}
+            fill="url(#performanceGradient)"
+            points={chart.areaPoints}
           />
 
-          {/* Linha do gráfico */}
           <polyline
             fill="none"
-            stroke="#F0C040"
+            stroke="#818cf8"
             strokeWidth="3"
-            points={data
-              .map((point, index) => {
-                const x =
-                  data.length === 1
-                    ? 400
-                    : 50 + (index / (data.length - 1)) * 700;
-                const y = 250 - ((point.value - minValue) / range) * 200;
-                return `${x},${y}`;
-              })
-              .join(" ")}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            points={chart.linePoints}
           />
 
-          // Pontos com eventos
           {data.map((point, index) => {
-            const x =
-              data.length === 1
-                ? 400
-                : 50 + (index / (data.length - 1)) * 700;
-            const y = 250 - ((point.value - minValue) / range) * 200;
+            const x = chart.getX(index);
+            const y = chart.getY(point.value);
 
             return (
               <circle
@@ -97,39 +118,72 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({ data }) => {
                 cx={x}
                 cy={y}
                 r="5"
-                fill="#F0C040"
-                stroke="#0A2540"
-                strokeWidth="2"
+                fill="#818cf8"
+                stroke="#0b1120"
+                strokeWidth="3"
                 onMouseEnter={() =>
-                  setHoveredPoint({ x, y, value: point.value, month: point.month })
+                  setHoveredPoint({
+                    x,
+                    y,
+                    value: point.value,
+                    month: point.month
+                  })
                 }
                 onMouseLeave={() => setHoveredPoint(null)}
-                style={{ cursor: "pointer" }}
+                style={{ cursor: 'pointer' }}
               />
             );
           })}
 
-          {/* Labels eixo Y */}
-          {[0, 1, 2, 3, 4].map((i) => {
-            const value = minValue + (range * i) / 4;
+          {chart.yLabels.map((item, index) => (
+            <text
+              key={index}
+              x={40}
+              y={item.y}
+              textAnchor="end"
+              className="text-[10px] fill-gray-400"
+            >
+              {item.label}
+            </text>
+          ))}
+
+          {data.map((point, index) => {
+            const x = chart.getX(index);
+
             return (
               <text
-                key={i}
-                x={40}
-                y={255 - i * 50}
-                textAnchor="end"
-                className="text-xs fill-gray-600"
+                key={index}
+                x={x}
+                y={278}
+                textAnchor="middle"
+                className="text-[10px] fill-gray-500"
               >
-                {value.toLocaleString("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                {point.month}
               </text>
             );
           })}
         </svg>
+
+        {hoveredPoint && (
+          <div
+            className="absolute z-20 px-3 py-2 rounded-xl bg-[#111827] border border-white/10 shadow-2xl text-xs text-white pointer-events-none"
+            style={{
+              left: `${(hoveredPoint.x / 800) * 100}%`,
+              top: `${(hoveredPoint.y / 300) * 100}%`,
+              transform: 'translate(-50%, -120%)'
+            }}
+          >
+            <p className="text-gray-400 mb-1">{hoveredPoint.month}</p>
+            <p className="font-semibold text-emerald-400">
+              {hoveredPoint.value.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              })}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

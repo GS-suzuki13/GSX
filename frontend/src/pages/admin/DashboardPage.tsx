@@ -3,20 +3,54 @@ import { DollarSign, Users, Calendar } from 'lucide-react';
 import { CSVHandler } from '../../utils/csvHandler';
 import { User } from '../../types';
 import { calculateNextRepasseBusinessDays } from '../../utils/calculateNextRepasse';
+import RepasseCalendar from '../../components/admin/RepasseCalendar';
+
+interface Repasse {
+  id: number;
+  label: string;
+  start: string;
+  end: string;
+}
+
+interface ClientWithRepasse extends User {
+  proximoRepasse: string;
+}
 
 export default function DashboardPage() {
   const [clients, setClients] = useState<User[]>([]);
+  const [clientesProximoRepasse, setClientesProximoRepasse] = useState<ClientWithRepasse[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const getNextBusinessDay = () => {
-    const date = new Date();
-    date.setDate(date.getDate() + 1);
+  const apiUrl = import.meta.env.VITE_API_URL;
 
-    while ([0, 6].includes(date.getDay())) {
-      date.setDate(date.getDate() + 1);
+  const formatCurrency = (value: number) =>
+    value.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    });
+
+  const parsePtBrDate = (date: string) => {
+    const [day, month, year] = date.split('/').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
+  const fetchRepasses = async (client: User): Promise<Repasse[]> => {
+    try {
+      const response = await fetch(`${apiUrl}/repasse/${client.id}`);
+
+      if (!response.ok) return [];
+
+      const data = await response.json();
+
+      return Array.isArray(data?.repasses)
+        ? data.repasses
+        : Array.isArray(data)
+          ? data
+          : [];
+    } catch (error) {
+      console.error(`Erro ao buscar repasses de ${client.name}:`, error);
+      return [];
     }
-
-    return date.toLocaleDateString('pt-BR');
   };
 
   const loadDashboardData = useCallback(async () => {
@@ -25,60 +59,66 @@ export default function DashboardPage() {
     try {
       const data = await CSVHandler.getUsers();
       const onlyClients = data.filter((user) => user.token !== 'adm');
+
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
+      const clientsWithRepasse = await Promise.all(
+        onlyClients
+          .filter((cliente) => cliente.data_cadastro)
+          .map(async (cliente) => {
+            const repasses = await fetchRepasses(cliente);
+
+            const proximoRepasse = calculateNextRepasseBusinessDays(
+              cliente.data_cadastro,
+              repasses
+            );
+
+            return {
+              ...cliente,
+              proximoRepasse
+            };
+          })
+      );
+
+      const clientesDoMes = clientsWithRepasse.filter((cliente) => {
+        if (!cliente.proximoRepasse || cliente.proximoRepasse === '—') return false;
+
+        const date = parsePtBrDate(cliente.proximoRepasse);
+
+        return (
+          date.getMonth() === currentMonth &&
+          date.getFullYear() === currentYear
+        );
+      });
+
       setClients(onlyClients);
+      setClientesProximoRepasse(clientesDoMes);
     } catch (error) {
       console.error('Erro ao carregar dashboard:', error);
       setClients([]);
+      setClientesProximoRepasse([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [apiUrl]);
 
   useEffect(() => {
     loadDashboardData();
   }, [loadDashboardData]);
 
-  const nextBusinessDate = useMemo(() => getNextBusinessDay(), []);
-
   const totalAportado = useMemo(() => {
-    return clients.reduce((acc, client) => acc + Number(client.valor_aportado || 0), 0);
+    return clients.reduce(
+      (acc, client) => acc + Number(client.valor_aportado || 0),
+      0
+    );
   }, [clients]);
-
-  const clientesProximoRepasse = useMemo(() => {
-    return clients
-      .filter((cliente) => cliente.data_cadastro)
-      .filter(
-        (cliente) =>
-          calculateNextRepasseBusinessDays(cliente.data_cadastro) === nextBusinessDate
-      )
-      .map((cliente) => ({
-        ...cliente,
-        proximoRepasse: nextBusinessDate
-      }));
-  }, [clients, nextBusinessDate]);
-
-  const clientesRecentes = useMemo(() => {
-    return [...clients]
-      .filter((client) => client.data_cadastro)
-      .sort(
-        (a, b) =>
-          new Date(b.data_cadastro).getTime() - new Date(a.data_cadastro).getTime()
-      )
-      .slice(0, 5);
-  }, [clients]);
-
-  const formatCurrency = (value: number) =>
-    value.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    });
 
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold text-white">
-          Dashboard
-        </h2>
+        <h2 className="text-2xl font-bold text-white">Dashboard</h2>
         <p className="text-gray-400 mt-1 text-sm">
           Visão geral do sistema com dados reais do banco
         </p>
@@ -113,103 +153,7 @@ export default function DashboardPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div className="xl:col-span-2 bg-[#111827] rounded-2xl p-6 border border-white/5">
-              <h3 className="text-lg font-semibold text-white mb-4">
-                Resumo Financeiro
-              </h3>
-
-              <div className="space-y-4">
-                <div className="bg-[#0f172a] border border-white/5 rounded-xl p-4">
-                  <p className="text-sm text-gray-400">Total aportado em carteira</p>
-                  <p className="text-2xl font-bold text-white mt-1">
-                    {formatCurrency(totalAportado)}
-                  </p>
-                </div>
-
-                <div className="bg-[#0f172a] border border-white/5 rounded-xl p-4">
-                  <p className="text-sm text-gray-400">Clientes ativos</p>
-                  <p className="text-2xl font-bold text-white mt-1">
-                    {clients.length}
-                  </p>
-                </div>
-
-                <div className="bg-[#0f172a] border border-white/5 rounded-xl p-4">
-                  <p className="text-sm text-gray-400">Clientes com próximo repasse</p>
-                  <p className="text-2xl font-bold text-white mt-1">
-                    {clientesProximoRepasse.length}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Data considerada: {nextBusinessDate}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-[#111827] rounded-2xl p-6 border border-white/5">
-              <h3 className="text-lg font-semibold text-white mb-4">
-                Próximos Repasses
-              </h3>
-
-              {clientesProximoRepasse.length === 0 ? (
-                <div className="text-gray-500 text-sm">
-                  Nenhum cliente com repasse previsto para {nextBusinessDate}.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {clientesProximoRepasse.map((client) => (
-                    <div
-                      key={client.user}
-                      className="bg-[#0f172a] border border-white/5 rounded-xl p-4"
-                    >
-                      <p className="text-white font-medium">{client.name}</p>
-                      <p className="text-gray-400 text-sm mt-1">
-                        Usuário: {client.user}
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        Próximo repasse: {client.proximoRepasse}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-[#111827] rounded-2xl p-6 border border-white/5">
-            <h3 className="text-lg font-semibold text-white mb-4">
-              Clientes Recentes
-            </h3>
-
-            {clientesRecentes.length === 0 ? (
-              <div className="text-gray-500 text-sm">
-                Nenhum cliente cadastrado.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-                {clientesRecentes.map((client) => (
-                  <div
-                    key={client.user}
-                    className="bg-[#0f172a] border border-white/5 rounded-xl p-4"
-                  >
-                    <p className="text-white font-medium">{client.name}</p>
-                    <p className="text-gray-400 text-sm mt-1">
-                      Usuário: {client.user}
-                    </p>
-                    <p className="text-gray-400 text-sm">
-                      Cadastro:{' '}
-                      {client.data_cadastro
-                        ? new Date(client.data_cadastro).toLocaleDateString('pt-BR')
-                        : '-'}
-                    </p>
-                    <p className="text-gray-400 text-sm">
-                      Aportado: {formatCurrency(Number(client.valor_aportado || 0))}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <RepasseCalendar clientesProximoRepasse={clientesProximoRepasse} />
         </>
       )}
     </div>

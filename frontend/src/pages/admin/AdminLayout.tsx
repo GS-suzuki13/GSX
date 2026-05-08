@@ -17,7 +17,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="min-h-screen bg-[#0b1120]">
       {menuOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -27,7 +27,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
 
       <aside
         className={`
-          fixed lg:static top-0 left-0 z-50
+          fixed top-0 left-0 z-50
           h-screen w-64 bg-black text-white p-6 flex flex-col
           transform transition-transform duration-300 ease-in-out
           ${menuOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -82,7 +82,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex min-h-screen flex-col min-w-0 lg:ml-64">
         <header className="lg:hidden bg-black text-white px-4 py-4 flex items-center justify-between sticky top-0 z-30">
           <img
             src={logo}
@@ -98,7 +98,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
           </button>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 md:p-8 bg-[#0b1120]">
+        <main className="flex-1 min-h-screen p-4 sm:p-6 md:p-8 bg-[#0b1120]">
           <Outlet />
         </main>
       </div>

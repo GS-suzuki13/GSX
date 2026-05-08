@@ -25,11 +25,9 @@ export default function ReturnsTable({ data, columns }: ReturnsTableProps) {
     }
   };
 
-  // formata automaticamente datas tipo 2026-02-27
   const formatIfDate = (value: any) => {
     if (typeof value !== 'string') return value;
 
-    // detecta padrão yyyy-mm-dd
     if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
       const [year, month, day] = value.split('T')[0].split('-');
       return `${day}/${month}/${year}`;
@@ -39,14 +37,14 @@ export default function ReturnsTable({ data, columns }: ReturnsTableProps) {
   };
 
   return (
-    <div className="max-h-[280px] overflow-y-auto overflow-x-auto rounded-lg">
-      <table className="w-full text-sm">
-        <thead className="sticky top-0 bg-gray-50 z-10">
-          <tr className="border-b">
+    <div className="max-h-[320px] overflow-y-auto overflow-x-auto rounded-xl border border-white/10">
+      <table className="w-full text-sm text-gray-300">
+        <thead className="sticky top-0 bg-[#111827] text-gray-400 uppercase text-xs">
+          <tr>
             {columns.map((col) => (
               <th
                 key={col.key}
-                className={`px-4 py-3 font-semibold ${getAlignClass(col.align)}`}
+                className={`px-4 py-3 font-medium tracking-wide ${getAlignClass(col.align)}`}
               >
                 {col.label}
               </th>
@@ -59,7 +57,7 @@ export default function ReturnsTable({ data, columns }: ReturnsTableProps) {
             data.map((row, index) => (
               <tr
                 key={row.id ?? index}
-                className="border-b last:border-0 hover:bg-gray-100 transition"
+                className="border-t border-white/5 hover:bg-white/5 transition"
               >
                 {columns.map((col) => {
                   const rawValue = (row as any)[col.key];
@@ -80,7 +78,7 @@ export default function ReturnsTable({ data, columns }: ReturnsTableProps) {
             <tr>
               <td
                 colSpan={columns.length}
-                className="px-4 py-6 text-center text-gray-500"
+                className="px-4 py-8 text-center text-gray-500"
               >
                 Nenhum dado encontrado
               </td>

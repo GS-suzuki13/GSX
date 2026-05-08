@@ -203,12 +203,13 @@ export default function ClientDashboard({ user, onLogout }: ClientDashboardProps
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-[#0b1120]">
         <Header title="Dashboard do Cliente" onLogout={onLogout} />
-        <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
-          <div className="text-center">
-            <div className="w-10 h-10 border-4 border-gray-200 border-t-gray-700 rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-600">Carregando dashboard...</p>
+
+        <div className="flex items-center justify-center min-h-[calc(100vh-80px)] px-6">
+          <div className="bg-[#111827] border border-white/10 rounded-2xl px-8 py-10 text-center shadow-2xl">
+            <div className="w-10 h-10 border-4 border-white/10 border-t-indigo-500 rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-300 text-sm">Carregando dashboard...</p>
           </div>
         </div>
       </div>
@@ -217,10 +218,11 @@ export default function ClientDashboard({ user, onLogout }: ClientDashboardProps
 
   if (error || !client) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-[#0b1120]">
         <Header title="Dashboard do Cliente" onLogout={onLogout} />
-        <main className="max-w-4xl mx-auto px-6 py-8">
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-red-700">
+
+        <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 text-red-300 shadow-lg">
             {error || 'Não foi possível carregar o cliente.'}
           </div>
         </main>
@@ -232,118 +234,145 @@ export default function ClientDashboard({ user, onLogout }: ClientDashboardProps
     {
       title: 'Valor Aportado',
       value: formatMoney(client.valor_aportado || 0),
-      icon: <DollarSign className="w-6 h-6 text-blue-600" />,
-      bg: 'bg-blue-50 border border-blue-100 text-blue-700'
+      icon: <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-400" />,
+      iconBg: 'bg-indigo-500/15',
+      valueColor: 'text-white'
     },
     {
       title: 'Rendimento Bruto',
       value: formatMoney(totalBruto),
-      icon: <TrendingUp className="w-6 h-6 text-green-600" />,
-      bg: 'bg-green-50 border border-green-100 text-green-700'
+      icon: <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />,
+      iconBg: 'bg-emerald-500/15',
+      valueColor: 'text-white'
     },
     {
       title: 'Rendimento Líquido',
       value: formatMoney(totalBruto * 0.7),
-      icon: <TrendingUp className="w-6 h-6 text-emerald-600" />,
-      bg: 'bg-emerald-50 border border-emerald-100 text-emerald-700'
+      icon: <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" />,
+      iconBg: 'bg-green-500/15',
+      valueColor: 'text-white'
     },
     {
       title: 'Próximo Repasse',
       value: nextRepasse,
-      icon: <Calendar className="w-6 h-6 text-gray-600" />,
-      bg: 'bg-gray-50 border border-gray-200 text-gray-800'
+      icon: <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />,
+      iconBg: 'bg-yellow-500/15',
+      valueColor: 'text-white'
     }
   ];
 
   return (
-    <div className="min-h-screen bg-white">
-      <Header title="Dashboard do Cliente" onLogout={onLogout} />
+    <div className="min-h-screen bg-[#0b1120]">
+      <Header onLogout={onLogout} />
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-[#1A2433]">
-            Olá, {client.name}
-          </h2>
-          <p className="text-gray-600">Aqui está um resumo dos seus investimentos</p>
-        </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <section className="mb-8">
+          <div className="bg-[#111827] border border-white/10 rounded-2xl p-5 sm:p-6 shadow-xl">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white">
+              Olá, {client.name}
+            </h2>
+            <p className="text-gray-400 mt-2 text-sm sm:text-base">
+              Aqui está um resumo dos seus investimentos
+            </p>
+          </div>
+        </section>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
           {cards.map((card, index) => (
             <div
               key={index}
-              className={`${card.bg} rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:shadow-md transition-all`}
+              className="bg-[#111827] border border-white/10 rounded-2xl p-5 shadow-xl hover:border-white/20 transition"
             >
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold">{card.title}</p>
-                {card.icon}
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm text-gray-400 font-medium">{card.title}</p>
+                <div className={`p-2.5 rounded-xl ${card.iconBg}`}>
+                  {card.icon}
+                </div>
               </div>
 
-              <p className="text-2xl font-bold mt-2">{card.value}</p>
+              <p className={`text-2xl sm:text-3xl font-bold ${card.valueColor} break-words`}>
+                {card.value}
+              </p>
             </div>
           ))}
-        </div>
+        </section>
 
         {repasses.length > 0 && (
-          <div className="mb-6">
-            <select
-              value={
-                selectedRepasseId === 'all'
-                  ? 'all'
-                  : selectedRepasseId === 'current'
-                    ? 'current'
-                    : String(selectedRepasseId)
-              }
-              onChange={(e) => {
-                const value = e.target.value;
+          <section className="mb-6">
+            <div className="bg-[#111827] border border-white/10 rounded-2xl p-4 shadow-xl">
+              <label className="block text-sm text-gray-400 mb-2">
+                Filtrar rendimentos
+              </label>
 
-                if (value === 'all') setSelectedRepasseId('all');
-                else if (value === 'current') setSelectedRepasseId('current');
-                else setSelectedRepasseId(Number(value));
-              }}
-              className="px-3 py-2 border rounded-md text-sm"
-            >
-              <option value="all">Todos os rendimentos</option>
-              <option value="current">Rendimento Atual</option>
+              <select
+                value={
+                  selectedRepasseId === 'all'
+                    ? 'all'
+                    : selectedRepasseId === 'current'
+                      ? 'current'
+                      : String(selectedRepasseId)
+                }
+                onChange={(e) => {
+                  const value = e.target.value;
 
-              {repasses.map((rep) => (
-                <option key={rep.id} value={String(rep.id)}>
-                  {rep.label} ({formatDateOnly(rep.start)} - {formatDateOnly(rep.end)})
-                </option>
-              ))}
-            </select>
-          </div>
+                  if (value === 'all') setSelectedRepasseId('all');
+                  else if (value === 'current') setSelectedRepasseId('current');
+                  else setSelectedRepasseId(Number(value));
+                }}
+                className="w-full sm:w-auto min-w-[240px] bg-[#0f172a] border border-white/10 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="all">Todos os rendimentos</option>
+                <option value="current">Rendimento Atual</option>
+
+                {repasses.map((rep) => (
+                  <option key={rep.id} value={String(rep.id)}>
+                    {rep.label} ({formatDateOnly(rep.start)} - {formatDateOnly(rep.end)})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </section>
         )}
 
-        <section className="bg-white border rounded-2xl shadow-sm p-6">
-          <h3 className="text-lg font-semibold mb-4 text-[#1A2433]">
-            Histórico de Rendimentos
-          </h3>
+        <section className="bg-[#111827] border border-white/10 rounded-2xl p-4 sm:p-6 shadow-xl">
+          <div className="mb-5">
+            <h3 className="text-lg sm:text-xl font-semibold text-white">
+              Histórico de Rendimentos
+            </h3>
+            <p className="text-sm text-gray-400 mt-1">
+              Visualize a evolução dos seus rendimentos no período selecionado
+            </p>
+          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="rounded-xl p-4 border bg-gray-50 min-h-[320px] shadow-sm">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div className="rounded-2xl p-4 border border-white/10 bg-[#0f172a] min-h-[320px] shadow-lg">
               {chartData.length > 0 ? (
                 <PerformanceChart data={chartData} />
               ) : (
-                <div className="h-full min-h-[260px] flex items-center justify-center text-gray-500 text-sm">
+                <div className="h-full min-h-[260px] flex items-center justify-center text-gray-500 text-sm text-center px-4">
                   Nenhum dado disponível para o gráfico
                 </div>
               )}
             </div>
 
-            <div className="rounded-xl p-4 border bg-gray-50 min-h-[320px] shadow-sm">
+            <div className="rounded-2xl p-4 border border-white/10 bg-[#0f172a] min-h-[320px] shadow-lg">
               <ReturnsTable
                 data={filteredReturns}
                 columns={[
                   {
                     key: 'data',
                     label: 'Data',
-                    render: (value) => formatDateOnly(String(value))
+                    render: (value) => (
+                      <span className="text-gray-200">
+                        {formatDateOnly(String(value))}
+                      </span>
+                    )
                   },
                   {
                     key: 'rendimento',
                     label: 'Rendimento (R$)',
                     render: (value) => (
-                      <span className="text-green-600 font-medium">
+                      <span className="text-emerald-400 font-medium">
                         R$ {Number(value).toLocaleString('pt-BR', {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2
@@ -358,22 +387,25 @@ export default function ClientDashboard({ user, onLogout }: ClientDashboardProps
           </div>
         </section>
 
-        <section className="bg-white border rounded-2xl shadow-sm p-6 mt-8">
-          <h3 className="text-lg font-semibold mb-4 text-[#1A2433]">
+        <section className="bg-[#111827] border border-white/10 rounded-2xl p-4 sm:p-6 mt-8 shadow-xl">
+          <h3 className="text-lg sm:text-xl font-semibold mb-4 text-white">
             Valor Bruto vs Valor Líquido
           </h3>
 
-          <div className="bg-gray-50 border rounded-xl p-5 shadow-sm">
-            <p className="text-[#1A2433] mb-2">
-              <strong>Rendimento Bruto:</strong> {formatMoney(totalBruto)}
+          <div className="bg-[#0f172a] border border-white/10 rounded-2xl p-5 shadow-lg space-y-3">
+            <p className="text-gray-200">
+              <strong className="text-white">Rendimento Bruto:</strong>{' '}
+              {formatMoney(totalBruto)}
             </p>
 
-            <p className="text-[#D64545] mb-2">
-              <strong>GSX (30%):</strong> {formatMoney(totalBruto * 0.3)}
+            <p className="text-red-400">
+              <strong className="text-red-300">GSX (30%):</strong>{' '}
+              {formatMoney(totalBruto * 0.3)}
             </p>
 
-            <p className="text-[#00A676] font-medium">
-              <strong>Rendimento Líquido:</strong> {formatMoney(totalBruto * 0.7)}
+            <p className="text-emerald-400 font-medium">
+              <strong className="text-emerald-300">Rendimento Líquido:</strong>{' '}
+              {formatMoney(totalBruto * 0.7)}
             </p>
           </div>
         </section>
