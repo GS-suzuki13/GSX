@@ -18,7 +18,7 @@ app.use("/returns/import", importRoutes);
 app.use("/repasse", repasseRoutes);
 app.use("/eventos", eventosRoutes);
 
-sequelize.sync({ alter: true }).then(() => {
+sequelize.sync({ alter: false }).then(() => {
   console.log("Banco sincronizado");
 });
 
