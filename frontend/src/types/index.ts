@@ -29,3 +29,16 @@ export interface LoggedUser {
   token: 'adm' | 'user';
   role: 'admin' | 'user';
 }
+
+export type EventoStatus = 'pendente' | 'concluido' | 'cancelado';
+export interface Evento {
+  id?: number;
+  nome: string;
+  data: string;
+  status: EventoStatus;
+  recorrente: boolean;
+  categoria?: string | null;
+  observacao?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}

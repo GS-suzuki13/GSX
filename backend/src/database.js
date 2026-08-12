@@ -1,23 +1,31 @@
 const { Sequelize } = require("sequelize");
 
-// Conexão com MySQL remoto (Hostinger)
 const sequelize = new Sequelize(
-  "u538361014_gsx_db",     // database
-  "u538361014_gsx_adm",  // username
-  "301020@Gsxativos",    // password
+  process.env.DB_NAME,
+  process.env.DB_USER,
+  process.env.DB_PASSWORD,
   {
-    host: "srv791.hstgr.io", // ex: sql123.hostinger.com
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT || 3306),
+
     dialect: "mysql",
-    logging: false,           // desativa logs SQL
+
+    logging: false,
+
     define: {
-      freezeTableName: true,  // evita pluralizar nomes das tabelas
-      timestamps: false,      // desativa createdAt/updatedAt
+      freezeTableName: true,
+      timestamps: false,
     },
+
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000,
+    },
+
+    connectTimeout: 30000,
   }
 );
 
-sequelize.authenticate()
-  .then(() => console.log("Conexão OK com MySQL remoto!"))
-  .catch(err => console.error("Erro ao conectar:", err));
-  
 module.exports = sequelize;

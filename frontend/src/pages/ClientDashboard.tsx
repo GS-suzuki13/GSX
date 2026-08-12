@@ -204,7 +204,7 @@ export default function ClientDashboard({ user, onLogout }: ClientDashboardProps
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0b1120]">
-        <Header title="Dashboard do Cliente" onLogout={onLogout} />
+        <Header onLogout={onLogout} />
 
         <div className="flex items-center justify-center min-h-[calc(100vh-80px)] px-6">
           <div className="bg-[#111827] border border-white/10 rounded-2xl px-8 py-10 text-center shadow-2xl">
@@ -219,7 +219,7 @@ export default function ClientDashboard({ user, onLogout }: ClientDashboardProps
   if (error || !client) {
     return (
       <div className="min-h-screen bg-[#0b1120]">
-        <Header title="Dashboard do Cliente" onLogout={onLogout} />
+        <Header onLogout={onLogout} />
 
         <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 text-red-300 shadow-lg">

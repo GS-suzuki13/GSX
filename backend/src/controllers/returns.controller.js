@@ -3,84 +3,209 @@ const User = require("../../models/User");
 
 exports.getAll = async (req, res) => {
   try {
-    const userId = req.params.id; // ← altere aqui
+    const { id: userId } = req.params;
+
     const user = await User.findByPk(userId);
-    if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
 
-    const filter = { userId };
-    if (req.query.repasseId) filter.repasseId = req.query.repasseId;
+    if (!user) {
+      return res.status(404).json({
+        error: "Usuário não encontrado",
+      });
+    }
 
-    const returns = await Return.findAll({ where: filter });
-    res.json(returns);
+    const where = {
+      userId,
+    };
+
+    if (req.query.repasseId) {
+      where.repasseId = req.query.repasseId;
+    }
+
+    const returns = await Return.findAll({
+      where,
+      order: [["data", "ASC"]],
+    });
+
+    return res.json(returns);
+
   } catch (err) {
+    console.error("GET RETURNS");
     console.error(err);
-    res.status(500).json({ error: "Erro ao buscar rendimentos" });
+
+    return res.status(500).json({
+      error: err.message,
+    });
   }
 };
 
 exports.create = async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const user = await User.findByPk(userId);
-    if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
 
-    const newReturn = await Return.create({
-      ...req.body,
-      userId: user.id,
-      repasseId: req.body.repasseId || null,
+  try {
+
+    const { id: userId } = req.params;
+
+    const {
+      data,
+      percentual,
+      variacao,
+      rendimento,
+      repasseId
+    } = req.body;
+
+    if (!data || percentual == null || variacao == null || rendimento == null) {
+      return res.status(400).json({
+        error: "Dados obrigatórios não informados.",
+      });
+    }
+
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        error: "Usuário não encontrado",
+      });
+    }
+
+    const novo = await Return.create({
+      data,
+      percentual,
+      variacao,
+      rendimento,
+      repasseId: repasseId || null,
+      userId,
     });
 
-    await user.update({ data_modificacao: new Date() });
+    await user.update({
+      data_modificacao: new Date(),
+    });
 
-    res.json({ success: true, return: newReturn });
+    return res.status(201).json({
+      success: true,
+      return: novo,
+    });
+
   } catch (err) {
+
+    console.error("CREATE RETURN");
     console.error(err);
-    res.status(500).json({ error: "Erro ao salvar rendimento" });
+
+    return res.status(500).json({
+      error: err.message,
+    });
+
   }
+
 };
 
 exports.update = async (req, res) => {
+
   try {
-    const date = req.params.date;
-    const userId = req.params.id;
+
+    const { id: userId, date } = req.params;
+
     const user = await User.findByPk(userId);
-    if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
+
+    if (!user) {
+      return res.status(404).json({
+        error: "Usuário não encontrado",
+      });
+    }
 
     const rendimento = await Return.findOne({
-      where: { userId: user.id, data: date },
+      where: {
+        userId,
+        data: date,
+      },
     });
-    if (!rendimento)
-      return res.status(404).json({ error: "Rendimento não encontrado" });
 
-    await rendimento.update(req.body);
-    await user.update({ data_modificacao: new Date() });
+    if (!rendimento) {
+      return res.status(404).json({
+        error: "Rendimento não encontrado",
+      });
+    }
 
-    res.json({ success: true, return: rendimento });
+    const {
+      percentual,
+      variacao,
+      rendimento: valor,
+      repasseId,
+    } = req.body;
+
+    await rendimento.update({
+      percentual,
+      variacao,
+      rendimento: valor,
+      repasseId,
+    });
+
+    await user.update({
+      data_modificacao: new Date(),
+    });
+
+    return res.json({
+      success: true,
+      return: rendimento,
+    });
+
   } catch (err) {
+
+    console.error("UPDATE RETURN");
     console.error(err);
-    res.status(500).json({ error: "Erro ao atualizar rendimento" });
+
+    return res.status(500).json({
+      error: err.message,
+    });
+
   }
+
 };
 
-
 exports.remove = async (req, res) => {
+
   try {
-    const date = req.params.date;
-    const userId = req.params.id;
+
+    const { id: userId, date } = req.params;
+
     const user = await User.findByPk(userId);
-    if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
+
+    if (!user) {
+      return res.status(404).json({
+        error: "Usuário não encontrado",
+      });
+    }
 
     const rendimento = await Return.findOne({
-      where: { userId: user.id, data: date },
+      where: {
+        userId,
+        data: date,
+      },
     });
-    if (!rendimento)
-      return res.status(404).json({ error: "Rendimento não encontrado" });
 
-    await user.update({ data_modificacao: new Date() });
+    if (!rendimento) {
+      return res.status(404).json({
+        error: "Rendimento não encontrado",
+      });
+    }
+
     await rendimento.destroy();
-    res.json({ success: true });
+
+    await user.update({
+      data_modificacao: new Date(),
+    });
+
+    return res.json({
+      success: true,
+    });
+
   } catch (err) {
+
+    console.error("DELETE RETURN");
     console.error(err);
-    res.status(500).json({ error: "Erro ao excluir rendimento" });
+
+    return res.status(500).json({
+      error: err.message,
+    });
+
   }
+
 };

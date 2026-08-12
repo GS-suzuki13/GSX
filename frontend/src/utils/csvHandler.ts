@@ -1,4 +1,4 @@
-import { User, ClientReturn } from '../types';
+import { User, ClientReturn, Evento } from '../types';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -88,5 +88,59 @@ export class CSVHandler {
     if (!res.ok) {
       throw new Error('Erro ao adicionar rendimento do cliente');
     }
+  }
+
+  static async getEventos(): Promise<Evento[]> {
+    const res = await fetch(`${apiUrl}/eventos`);
+
+    if (!res.ok) {
+      throw new Error('Erro ao buscar eventos');
+    }
+
+    return await res.json();
+  }
+
+  static async addEvento(evento: Evento): Promise<{ success: boolean; evento: Evento }> {
+    const res = await fetch(`${apiUrl}/eventos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(evento),
+    });
+
+    if (!res.ok) {
+      throw new Error('Erro ao criar evento');
+    }
+
+    return await res.json();
+  }
+
+  static async updateEvento(id: number, evento: Partial<Evento>): Promise<{ success: boolean; evento: Evento }> {
+    const res = await fetch(`${apiUrl}/eventos/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(evento),
+    });
+
+    if (!res.ok) {
+      throw new Error('Erro ao atualizar evento');
+    }
+
+    return await res.json();
+  }
+
+  static async cancelEvento(id: number): Promise<{ success: boolean; evento: Evento }> {
+    return this.updateEvento(id, { status: 'cancelado' });
+  }
+
+  static async deleteEvento(id: number): Promise<{ success: boolean }> {
+    const res = await fetch(`${apiUrl}/eventos/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!res.ok) {
+      throw new Error('Erro ao excluir evento');
+    }
+
+    return await res.json();
   }
 }

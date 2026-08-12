@@ -2,8 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import Login from './pages/Login';
 import AdminLayout from './pages/admin/AdminLayout';
-import DashboardPage from './pages/admin/DashboardPage';
 import ClientsPage from './pages/admin/ClientsPage';
+import DashboardPage from './pages/admin/DashboardPage';
+import EventosPage from './pages/admin/EventosPage';
 import ReturnsPage from './pages/admin/ReturnsPage';
 import ClientDashboard from './pages/ClientDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -58,6 +59,7 @@ function App() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="clientes" element={<ClientsPage />} />
           <Route path="rendimentos" element={<ReturnsPage />} />
+          <Route path="eventos" element={<EventosPage />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/login" replace />} />

@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import {
+  Menu,
+  X,
+  LayoutDashboard,
+  Users,
+  TrendingUp,
+  CalendarDays,
+  LogOut
+} from 'lucide-react';
 import logo from '../../assets/logo.png';
 
 interface AdminLayoutProps {
@@ -49,34 +57,46 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
           </button>
         </div>
 
-        <nav className="flex flex-col gap-4">
+        <nav className="flex flex-col gap-2">
           <button
             onClick={() => handleNavigate('/admin/dashboard')}
-            className="text-left hover:text-gray-300 transition"
+            className="flex items-center gap-3 px-3 py-3 rounded-xl text-left hover:bg-white/5 transition text-gray-200 hover:text-white"
           >
+            <LayoutDashboard size={18} />
             Dashboard
           </button>
 
           <button
             onClick={() => handleNavigate('/admin/clientes')}
-            className="text-left hover:text-gray-300 transition"
+            className="flex items-center gap-3 px-3 py-3 rounded-xl text-left hover:bg-white/5 transition text-gray-200 hover:text-white"
           >
+            <Users size={18} />
             Clientes
           </button>
 
           <button
             onClick={() => handleNavigate('/admin/rendimentos')}
-            className="text-left hover:text-gray-300 transition"
+            className="flex items-center gap-3 px-3 py-3 rounded-xl text-left hover:bg-white/5 transition text-gray-200 hover:text-white"
           >
+            <TrendingUp size={18} />
             Rendimentos
+          </button>
+
+          <button
+            onClick={() => handleNavigate('/admin/eventos')}
+            className="flex items-center gap-3 px-3 py-3 rounded-xl text-left hover:bg-white/5 transition text-gray-200 hover:text-white"
+          >
+            <CalendarDays size={18} />
+            Eventos
           </button>
         </nav>
 
         <div className="mt-auto">
           <button
             onClick={onLogout}
-            className="bg-red-600 hover:bg-red-700 px-4 py-2 mt-8 w-full transition"
+            className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-3 mt-8 w-full rounded-xl transition text-white font-medium"
           >
+            <LogOut size={18} />
             Sair
           </button>
         </div>
